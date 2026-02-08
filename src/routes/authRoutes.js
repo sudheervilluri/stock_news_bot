@@ -21,18 +21,32 @@ router.get('/login', (req, res) => {
 // Handle login
 router.post('/login', (req, res) => {
   const { username, password } = req.body;
+  
+  console.log('[auth] Login attempt for username:', username);
 
   if (!username || !password) {
+    console.log('[auth] Missing username or password');
     return res.render('login', { error: 'Username and password are required' });
   }
 
   const user = getUserByUsername(username);
+  console.log('[auth] User found:', !!user);
 
-  if (!user || !verifyPassword(password, user.password)) {
+  if (!user) {
+    console.log('[auth] User not found');
+    return res.render('login', { error: 'Invalid username or password' });
+  }
+
+  const passwordMatch = verifyPassword(password, user.password);
+  console.log('[auth] Password match:', passwordMatch);
+
+  if (!passwordMatch) {
+    console.log('[auth] Password does not match');
     return res.render('login', { error: 'Invalid username or password' });
   }
 
   // Create session
+  console.log('[auth] Creating session for user:', username);
   req.session.user = {
     id: user.id,
     username: user.username,
@@ -42,6 +56,7 @@ router.post('/login', (req, res) => {
     preferences: user.preferences || getUserPreferences(username),
   };
 
+  console.log('[auth] Login successful, redirecting to /');
   res.redirect('/');
 });
 
