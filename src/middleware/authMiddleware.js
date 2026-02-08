@@ -1,5 +1,5 @@
 const session = require('express-session');
-const { getUserByUsername, verifyPassword, updateUserPreferences, getUserPreferences } = require('./services/authService');
+const { getUserByUsername, verifyPassword, updateUserPreferences, getUserPreferences } = require('../services/authService');
 
 // Authentication middleware
 function requireAuth(req, res, next) {

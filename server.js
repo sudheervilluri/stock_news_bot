@@ -44,6 +44,7 @@ const { normalizeIndianSymbol } = require('./src/utils/symbols');
 const {
   initializeSessionMiddleware,
   attachUserToLocals,
+  requireAuth,
 } = require('./src/middleware/authMiddleware');
 const authRoutes = require('./src/routes/authRoutes');
 
@@ -616,8 +617,15 @@ app.get('/api/db', (_req, res) => {
 // Mount authentication routes
 app.use(authRoutes);
 
-app.get('*', (_req, res) => {
+// Protected dashboard route
+app.get('/', requireAuth, (_req, res) => {
+  // For now, serve the React app. In the future, this can be customized based on user preferences
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('*', (_req, res) => {
+  // Redirect to login if accessing any other route without auth
+  res.redirect('/login');
 });
 
 app.use((error, _req, res, _next) => {

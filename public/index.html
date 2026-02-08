@@ -8,15 +8,103 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .navbar-top {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .navbar-brand {
+      font-weight: 700;
+      font-size: 20px;
+      color: white;
+      text-decoration: none;
+      margin: 0;
+    }
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .user-info {
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .navbar-icons {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+    .navbar-icons a {
+      color: white;
+      text-decoration: none;
+      font-size: 18px;
+      transition: transform 0.2s ease, color 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .navbar-icons a:hover {
+      transform: scale(1.2);
+      color: #ffd700;
+    }
+  </style>
 </head>
 <body>
+  <div class="navbar-top" id="navbarTop"></div>
   <div id="root"></div>
 
   <script defer crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script defer src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script>
+    // Check if user is logged in
+    (function checkSession() {
+      fetch('/api/session/status')
+        .then(res => res.json())
+        .then(data => {
+          if (!data.authenticated) {
+            window.location.href = '/login';
+            return;
+          }
+          
+          // User is authenticated, render navbar
+          const navbar = document.getElementById('navbarTop');
+          if (navbar) {
+            navbar.innerHTML = `
+              <a class="navbar-brand" href="/">📈 Stock News Bot</a>
+              <div class="navbar-right">
+                <div class="user-info">
+                  Welcome, <strong>${data.user.fullName || data.user.username}</strong>
+                </div>
+                <div class="navbar-icons">
+                  <a href="/settings" title="Settings">
+                    <i class="fas fa-cog"></i>
+                  </a>
+                  <a href="/profile" title="Profile">
+                    <i class="fas fa-user-circle"></i>
+                  </a>
+                  <a href="/logout" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                  </a>
+                </div>
+              </div>
+            `;
+          }
+        })
+        .catch(err => {
+          console.error('Session check failed:', err);
+          window.location.href = '/login';
+        });
+    })();
+
     (function enableDevAutoReload() {
       var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       if (!isLocal || typeof window.EventSource === 'undefined') {

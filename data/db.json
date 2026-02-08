@@ -376,55 +376,69 @@
       "liveData": false,
       "cachedQuote": {
         "symbol": "544467.BO",
-        "shortName": "National Securities Depository Ltd",
+        "shortName": "544467",
         "exchange": "BSE",
         "currency": "INR",
-        "regularMarketPrice": 969.25,
-        "regularMarketChange": -10.15,
-        "regularMarketChangePercent": -1.0363,
-        "regularMarketOpen": 975,
-        "previousClose": 979.4,
-        "dayHigh": 975,
-        "dayLow": 960,
+        "regularMarketPrice": null,
+        "regularMarketChange": null,
+        "regularMarketChangePercent": null,
+        "regularMarketOpen": null,
+        "previousClose": null,
+        "dayHigh": null,
+        "dayLow": null,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
-        "marketCap": 193850000000,
-        "fiftyTwoWeekLow": 880,
-        "fiftyTwoWeekHigh": 1425,
-        "peRatio": 52,
+        "marketCap": null,
+        "fiftyTwoWeekLow": null,
+        "fiftyTwoWeekHigh": null,
+        "peRatio": null,
         "eps": null,
-        "pbRatio": 8.9722,
+        "pbRatio": null,
         "ema50": null,
         "ema200": null,
         "thirtyWeekSma": null,
         "marketCycleStage": "",
-        "faceValue": 2,
+        "faceValue": null,
         "vwap": null,
         "upperCircuit": null,
         "lowerCircuit": null,
         "deliveryToTradedQuantity": null,
         "industry": "",
         "isin": "",
-        "lastUpdateTime": "06 Feb - close price",
-        "source": "bseindia",
-        "dataStatus": "live",
+        "lastUpdateTime": "",
+        "source": "unavailable:stale",
+        "dataStatus": "stale",
         "providerTrace": [
           "nseindia:miss",
-          "hit:bseindia",
-          "enrich:bseindia(shortName)",
-          "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
+          "bseindia:miss",
+          "tradingview:error(ERR:tradingview-empty-result-set)",
+          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:544467.BO:ERR_BAD_REQUEST:Request failed with status code 429;543971.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
+          "screener:miss",
+          "unavailable:all providers failed",
+          "nseindia:miss",
+          "bseindia:miss",
+          "tradingview:error(ERR:tradingview-empty-result-set)",
+          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:544467.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
+          "screener:miss",
+          "stale-cache:all providers failed",
+          "nseindia:miss",
+          "bseindia:miss",
+          "tradingview:error(ERR:tradingview-empty-result-set)",
+          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:544467.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
+          "screener:miss",
+          "stale-cache:all providers failed"
         ]
       },
-      "cachedAt": "2026-02-08T07:25:50.117Z",
+      "cachedAt": "2026-02-08T08:58:13.366Z",
       "createdAt": "2026-02-07T17:00:54.437Z",
-      "updatedAt": "2026-02-08T07:25:50.119Z"
+      "updatedAt": "2026-02-08T08:59:12.328Z"
     },
     {
       "symbol": "543620.BO",
       "liveData": false,
       "cachedQuote": {
         "symbol": "543620.BO",
-        "shortName": "Insolation Energy Ltd",
+        "shortName": "543620",
         "exchange": "BSE",
         "currency": "INR",
         "regularMarketPrice": 112.6,
@@ -436,36 +450,35 @@
         "dayLow": 101.6,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
-        "marketCap": 24820000000,
-        "fiftyTwoWeekLow": 92.8,
-        "fiftyTwoWeekHigh": 298,
-        "peRatio": 17.1,
+        "marketCap": null,
+        "fiftyTwoWeekLow": null,
+        "fiftyTwoWeekHigh": null,
+        "peRatio": null,
         "eps": null,
-        "pbRatio": 3.6218,
+        "pbRatio": null,
         "ema50": null,
         "ema200": null,
         "thirtyWeekSma": null,
         "marketCycleStage": "",
-        "faceValue": 1,
+        "faceValue": null,
         "vwap": null,
         "upperCircuit": null,
         "lowerCircuit": null,
         "deliveryToTradedQuantity": null,
         "industry": "",
         "isin": "",
-        "lastUpdateTime": "06 Feb - close price",
+        "lastUpdateTime": "",
         "source": "bseindia",
         "dataStatus": "live",
         "providerTrace": [
           "nseindia:miss",
           "hit:bseindia",
-          "enrich:bseindia(shortName)",
-          "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
+          "enrich:bseindia(shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T07:25:50.117Z",
+      "cachedAt": "2026-02-08T08:58:13.366Z",
       "createdAt": "2026-02-07T17:00:54.437Z",
-      "updatedAt": "2026-02-08T07:25:50.119Z"
+      "updatedAt": "2026-02-08T08:59:12.328Z"
     },
     {
       "symbol": "YATHARTH.NS",
@@ -537,9 +550,9 @@
         "eps": null,
         "pbRatio": null,
         "ema50": 3738.5634081160338,
-        "ema200": null,
-        "thirtyWeekSma": null,
-        "marketCycleStage": "",
+        "ema200": 4211.9478794271945,
+        "thirtyWeekSma": 4296.241666666668,
+        "marketCycleStage": "Markdown",
         "faceValue": 10,
         "vwap": null,
         "upperCircuit": null,
@@ -553,13 +566,12 @@
         "providerTrace": [
           "hit:nseindia",
           "enrich:tradingview(regularMarketVolume,marketCap,ema50)",
-          "technicals:screener-alias-tech:tradingview:SHILCTECH.NS",
-          "technicals:screener-alias-tech:tradingview:SHILCTECH.NS"
+          "technicals:symbol-alias-tech:SHILCTECH.NS:tradingview:SHILCTECH.NS+symbol-alias-tech:SHILCTECH.NS:tradingview:SHILCTECH.BO"
         ]
       },
-      "cachedAt": "2026-02-08T07:25:50.117Z",
+      "cachedAt": "2026-02-08T08:55:31.127Z",
       "createdAt": "2026-02-08T07:19:22.084Z",
-      "updatedAt": "2026-02-08T07:25:50.119Z"
+      "updatedAt": "2026-02-08T08:57:21.185Z"
     },
     {
       "symbol": "WAAREEINDO.NS",
@@ -587,7 +599,7 @@
         "ema50": 447.20081073516104,
         "ema200": null,
         "thirtyWeekSma": 472.7416666666667,
-        "marketCycleStage": "",
+        "marketCycleStage": "Markdown",
         "faceValue": 10,
         "vwap": null,
         "upperCircuit": null,
@@ -601,13 +613,12 @@
         "providerTrace": [
           "hit:nseindia",
           "enrich:tradingview(regularMarketVolume,marketCap,ema50,thirtyWeekSma)",
-          "technicals:screener-alias-tech:tradingview:WAAREEINDO.NS",
-          "technicals:screener-alias-tech:tradingview:WAAREEINDO.NS"
+          "technicals:symbol-alias-tech:WAAREEINDO.NS:tradingview:WAAREEINDO.NS+symbol-alias-tech:WAAREEINDO.NS:tradingview:WAAREEINDO.BO"
         ]
       },
-      "cachedAt": "2026-02-08T07:25:50.117Z",
+      "cachedAt": "2026-02-08T08:55:31.127Z",
       "createdAt": "2026-02-08T07:20:53.946Z",
-      "updatedAt": "2026-02-08T07:25:50.119Z"
+      "updatedAt": "2026-02-08T08:57:21.185Z"
     },
     {
       "symbol": "APOLLO.NS",
@@ -1201,12 +1212,12 @@
         "providerTrace": [
           "hit:nseindia",
           "enrich:tradingview(regularMarketVolume,marketCap,ema50)",
-          "technicals:symbol-alias-tech:MBEL.NS:tradingview:MBEL.NS+symbol-alias-tech:MBEL.NS:tradingview:MBEL.BO+screener-alias-tech:tradingview:MBEL.NS"
+          "technicals:symbol-alias-tech:MBEL.NS:tradingview:MBEL.NS+symbol-alias-tech:MBEL.NS:tradingview:MBEL.BO"
         ]
       },
-      "cachedAt": "2026-02-08T07:44:04.790Z",
+      "cachedAt": "2026-02-08T08:55:31.127Z",
       "createdAt": "2026-02-08T07:44:04.785Z",
-      "updatedAt": "2026-02-08T07:44:17.556Z"
+      "updatedAt": "2026-02-08T08:57:21.185Z"
     },
     {
       "symbol": "MOBIKWIK.NS",
@@ -1581,49 +1592,47 @@
       "liveData": false,
       "cachedQuote": {
         "symbol": "543971.BO",
-        "shortName": "Bondada Engineering Ltd",
+        "shortName": "543971",
         "exchange": "BSE",
         "currency": "INR",
-        "regularMarketPrice": 338,
-        "regularMarketChange": null,
-        "regularMarketChangePercent": null,
-        "regularMarketOpen": null,
-        "previousClose": null,
-        "dayHigh": null,
-        "dayLow": null,
+        "regularMarketPrice": 338.2,
+        "regularMarketChange": 5.65,
+        "regularMarketChangePercent": 1.699,
+        "regularMarketOpen": 334.95,
+        "previousClose": 332.55,
+        "dayHigh": 339.5,
+        "dayLow": 330.4,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
-        "marketCap": 37740000000,
-        "fiftyTwoWeekLow": 295,
-        "fiftyTwoWeekHigh": 510,
+        "marketCap": null,
+        "fiftyTwoWeekLow": null,
+        "fiftyTwoWeekHigh": null,
         "peRatio": null,
         "eps": null,
-        "pbRatio": 8.3251,
+        "pbRatio": null,
         "ema50": null,
         "ema200": null,
         "thirtyWeekSma": null,
         "marketCycleStage": "",
-        "faceValue": 2,
+        "faceValue": null,
         "vwap": null,
         "upperCircuit": null,
         "lowerCircuit": null,
         "deliveryToTradedQuantity": null,
         "industry": "",
         "isin": "",
-        "lastUpdateTime": "06 Feb - close price",
-        "source": "screener",
-        "dataStatus": "delayed",
+        "lastUpdateTime": "",
+        "source": "bseindia",
+        "dataStatus": "live",
         "providerTrace": [
           "nseindia:miss",
-          "bseindia:error(ERR:bse-empty-result-set:543971.BO:HPE_INVALID_HEADER_TOKEN:Parse Error: Unexpected whitespace after header value)",
-          "tradingview:error(ERR:tradingview-empty-result-set)",
-          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:543971.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
-          "hit:screener"
+          "hit:bseindia",
+          "enrich:bseindia(shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T07:46:47.726Z",
+      "cachedAt": "2026-02-08T08:58:13.366Z",
       "createdAt": "2026-02-08T07:46:47.722Z",
-      "updatedAt": "2026-02-08T07:46:59.356Z"
+      "updatedAt": "2026-02-08T08:59:12.328Z"
     },
     {
       "symbol": "544037.BO",
@@ -1669,9 +1678,9 @@
           "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T07:47:03.510Z",
+      "cachedAt": "2026-02-08T08:58:13.366Z",
       "createdAt": "2026-02-08T07:47:03.508Z",
-      "updatedAt": "2026-02-08T07:47:12.320Z"
+      "updatedAt": "2026-02-08T08:59:12.328Z"
     },
     {
       "symbol": "AXISCADES.NS",
@@ -1915,13 +1924,13 @@
         "shortName": "KP Green Engineering Ltd",
         "exchange": "BSE",
         "currency": "INR",
-        "regularMarketPrice": 417,
-        "regularMarketChange": null,
-        "regularMarketChangePercent": null,
-        "regularMarketOpen": null,
-        "previousClose": null,
-        "dayHigh": null,
-        "dayLow": null,
+        "regularMarketPrice": 416.55,
+        "regularMarketChange": 5.35,
+        "regularMarketChangePercent": 1.3011,
+        "regularMarketOpen": 410,
+        "previousClose": 411.2,
+        "dayHigh": 422.7,
+        "dayLow": 410,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
         "marketCap": 20830000000,
@@ -1942,19 +1951,18 @@
         "industry": "",
         "isin": "",
         "lastUpdateTime": "06 Feb - close price",
-        "source": "screener",
-        "dataStatus": "delayed",
+        "source": "bseindia",
+        "dataStatus": "live",
         "providerTrace": [
           "nseindia:miss",
-          "bseindia:error(ERR:bse-empty-result-set:544150.BO:HPE_INVALID_HEADER_TOKEN:Parse Error: Unexpected whitespace after header value)",
-          "tradingview:error(ERR:tradingview-empty-result-set)",
-          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:544150.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
-          "hit:screener"
+          "hit:bseindia",
+          "enrich:bseindia(shortName)",
+          "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T07:48:50.616Z",
+      "cachedAt": "2026-02-08T08:58:13.366Z",
       "createdAt": "2026-02-08T07:48:50.615Z",
-      "updatedAt": "2026-02-08T07:49:03.279Z"
+      "updatedAt": "2026-02-08T08:59:12.328Z"
     },
     {
       "symbol": "KRN.NS",
@@ -2134,12 +2142,12 @@
         "providerTrace": [
           "hit:nseindia",
           "enrich:tradingview(regularMarketVolume,marketCap,ema50,thirtyWeekSma)",
-          "technicals:symbol-alias-tech:SAFEENTP.NS:tradingview:SAFEENTP.NS+screener-alias-tech:tradingview:SAFEENTP.NS"
+          "technicals:symbol-alias-tech:SAFEENTP.NS:tradingview:SAFEENTP.NS"
         ]
       },
-      "cachedAt": "2026-02-08T07:49:46.024Z",
+      "cachedAt": "2026-02-08T08:55:31.127Z",
       "createdAt": "2026-02-08T07:49:46.022Z",
-      "updatedAt": "2026-02-08T07:49:54.378Z"
+      "updatedAt": "2026-02-08T08:57:21.185Z"
     },
     {
       "symbol": "SENORES.NS",
@@ -2687,12 +2695,12 @@
         "providerTrace": [
           "hit:nseindia",
           "enrich:tradingview(regularMarketVolume,marketCap,ema50)",
-          "technicals:symbol-alias-tech:GROWW.NS:tradingview:GROWW.NS+symbol-alias-tech:GROWW.NS:tradingview:GROWW.BO+screener-alias-tech:tradingview:GROWW.NS"
+          "technicals:symbol-alias-tech:GROWW.NS:tradingview:GROWW.NS+symbol-alias-tech:GROWW.NS:tradingview:GROWW.BO"
         ]
       },
-      "cachedAt": "2026-02-08T07:53:08.082Z",
+      "cachedAt": "2026-02-08T08:55:31.127Z",
       "createdAt": "2026-02-08T07:53:08.080Z",
-      "updatedAt": "2026-02-08T07:53:15.580Z"
+      "updatedAt": "2026-02-08T08:57:21.185Z"
     },
     {
       "symbol": "506597.BO",
@@ -3013,12 +3021,12 @@
         "providerTrace": [
           "hit:nseindia",
           "enrich:tradingview(regularMarketVolume,marketCap,ema50)",
-          "technicals:symbol-alias-tech:STYL.NS:tradingview:STYL.NS+symbol-alias-tech:STYL.NS:tradingview:STYL.BO+screener-alias-tech:tradingview:STYL.NS"
+          "technicals:symbol-alias-tech:STYL.NS:tradingview:STYL.NS+symbol-alias-tech:STYL.NS:tradingview:STYL.BO"
         ]
       },
-      "cachedAt": "2026-02-08T07:54:31.390Z",
+      "cachedAt": "2026-02-08T08:55:31.127Z",
       "createdAt": "2026-02-08T07:54:30.121Z",
-      "updatedAt": "2026-02-08T07:54:41.187Z"
+      "updatedAt": "2026-02-08T08:57:21.185Z"
     },
     {
       "symbol": "STYLEBAAZA.NS",
@@ -3206,6 +3214,18 @@
     }
   ],
   "portfolio": [],
+  "profile": {
+    "displayName": "Admin",
+    "contactName": "Admin",
+    "enabledPages": [
+      "watchlist",
+      "portfolio",
+      "screener",
+      "feed",
+      "events"
+    ],
+    "updatedAt": "2026-02-08T08:57:17.135Z"
+  },
   "createdAt": "2026-02-01T09:00:00.000Z",
-  "updatedAt": "2026-02-08T07:55:04.354Z"
+  "updatedAt": "2026-02-08T08:59:12.328Z"
 }

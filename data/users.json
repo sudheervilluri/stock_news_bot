@@ -3,7 +3,7 @@
     {
       "id": 1,
       "username": "admin",
-      "password": "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36LRW9Fm",
+      "password": "$2a$10$C.O9jrfNIVTSwe.yWafI4eNcM.Pu10EbL9quqXvMkoCumGUN6GrL2",
       "email": "admin@stocknewsbot.com",
       "fullName": "Administrator",
       "createdAt": "2026-02-08T00:00:00Z",

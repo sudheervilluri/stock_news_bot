@@ -5,8 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stock News Bot</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
+            padding: 0;
+            margin: 0;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 15px 20px;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 20px;
+            color: white !important;
+            margin: 0;
+        }
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-left: auto;
+        }
+        .user-info {
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .navbar-icons {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .navbar-icons a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            transition: transform 0.2s ease, color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .navbar-icons a:hover {
+            transform: scale(1.2);
+            color: #ffd700;
+        }
+        .main-wrapper {
             padding: 20px;
         }
         .container {
@@ -25,56 +70,90 @@
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
+        h1 {
+            color: #667eea;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="main-content">
-            <h1>Stock News Bot</h1>
-            <form action="/fetch-news" method="post">
-                <button type="submit" class="btn btn-primary">Fetch News</button>
-            </form>
-            <h2>Stocks:</h2>
-            <ul class="list-group">
-                <% stocks.forEach(stock => { %>
-                    <li class="list-group-item">
-                        <%= stock %>
-                        <form action="/delete-stock" method="post" style="display: inline;">
-                            <input type="hidden" name="stockSymbol" value="<%= stock %>">
-                            <button type="submit" class="btn btn-danger">Delete</button>
-                        </form>
-                    </li>
-                <% }) %>
-            </ul>
-            <h2>Add Stock:</h2>
-            <form action="/add-stock" method="post">
-                <input type="text" name="stockSymbol" placeholder="Enter stock symbol">
-                <button type="submit" class="btn btn-primary">Add</button>
-            </form>
-            <h2>News:</h2>
-            <ul class="list-group">
-                <% news.forEach(article => { %>
-                    <li class="list-group-item">
-                        <%= article.title %> (<%= article.source.name %>)
-                        <a href="<%= article.url %>">Read more</a>
-                    </li>
-                <% }) %>
-            </ul>
-        </div>
-        <div class="sidebar">
-            <h2>Upcoming Earnings:</h2>
-            <ul class="list-group">
-                <% upcomingResults.forEach(result => { %>
-                    <li class="list-group-item">
-                        <strong><%= result.stock %></strong>: <%= result.date %>
-                        <ul>
-                            <li>Reported EPS: <%= result.reportedEPS %></li>
-                            <li>Estimated EPS: <%= result.estimatedEPS %></li>
-                        </ul>
-                    </li>
-                <% }) %>
-            </ul>
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <div style="display: flex; align-items: center; width: 100%;">
+            <a class="navbar-brand" href="/">📈 Stock News Bot</a>
+            <div class="navbar-right">
+                <div class="user-info">
+                    Welcome, <strong><%= user.fullName || user.username %></strong>
+                </div>
+                <div class="navbar-icons">
+                    <a href="/settings" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </a>
+                    <a href="/profile" title="Profile">
+                        <i class="fas fa-user-circle"></i>
+                    </a>
+                    <a href="/logout" title="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
+        <div class="container">
+            <div class="main-content">
+                <h1>Stock News Bot</h1>
+                <form action="/fetch-news" method="post">
+                    <button type="submit" class="btn btn-primary">Fetch News</button>
+                </form>
+                <h2>Stocks:</h2>
+                <ul class="list-group">
+                    <% stocks.forEach(stock => { %>
+                        <li class="list-group-item">
+                            <%= stock %>
+                            <form action="/delete-stock" method="post" style="display: inline;">
+                                <input type="hidden" name="stockSymbol" value="<%= stock %>">
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </form>
+                        </li>
+                    <% }) %>
+                </ul>
+                <h2>Add Stock:</h2>
+                <form action="/add-stock" method="post">
+                    <input type="text" name="stockSymbol" placeholder="Enter stock symbol">
+                    <button type="submit" class="btn btn-primary">Add</button>
+                </form>
+                <h2>News:</h2>
+                <ul class="list-group">
+                    <% news.forEach(article => { %>
+                        <li class="list-group-item">
+                            <%= article.title %> (<%= article.source.name %>)
+                            <a href="<%= article.url %>">Read more</a>
+                        </li>
+                    <% }) %>
+                </ul>
+            </div>
+            <div class="sidebar">
+                <h2>Upcoming Earnings:</h2>
+                <ul class="list-group">
+                    <% upcomingResults.forEach(result => { %>
+                        <li class="list-group-item">
+                            <strong><%= result.stock %></strong>: <%= result.date %>
+                            <ul>
+                                <li>Reported EPS: <%= result.reportedEPS %></li>
+                                <li>Estimated EPS: <%= result.estimatedEPS %></li>
+                            </ul>
+                        </li>
+                    <% }) %>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </body>
 </html>
