@@ -1,7 +1,7 @@
 const dns = require('dns').promises;
 const net = require('net');
 const { config } = require('../src/config');
-const { readDb } = require('../src/store');
+const { readDb, initializeStore } = require('../src/store');
 const { getQuotes } = require('../src/services/marketDataService');
 
 function printHeader() {
@@ -21,8 +21,9 @@ function printHeader() {
   }
 }
 
-function checkStorage() {
+async function checkStorage() {
   try {
+    await initializeStore();
     const db = readDb();
     console.log(`storage: ok (watchlist=${db.watchlist.length}, portfolio=${db.portfolio.length}, chat=${db.chatHistory.length})`);
   } catch (error) {
@@ -107,7 +108,7 @@ function checkPort() {
 
 async function main() {
   printHeader();
-  checkStorage();
+  await checkStorage();
   await checkProviderDns();
   await checkQuoteProbe();
   await checkPort();

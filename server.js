@@ -13,6 +13,7 @@ const {
   addPortfolioPosition,
   updatePortfolioPosition,
   deletePortfolioPosition,
+  initializeStore,
   readDb,
 } = require('./src/store');
 const {
@@ -27,6 +28,7 @@ const {
   refreshDailySalesSnapshot,
   getDailySalesSnapshotStatus,
   getDailySalesForSymbol,
+  requestSalesSnapshotRefreshIfNeeded,
   stopDailySalesSnapshot,
 } = require('./src/services/dailySalesService');
 const { getWatchlistNewsPage } = require('./src/services/newsService');
@@ -36,11 +38,13 @@ const {
   refreshSymbolMaster,
   searchSymbols,
   resolveSymbolQuery,
+  getSymbolMasterItems,
   getSymbolMasterStatus,
   stopSymbolMasterRefresh,
 } = require('./src/services/symbolMasterService');
 const { config } = require('./src/config');
-const { normalizeIndianSymbol } = require('./src/utils/symbols');
+const { ensureMongoIndexes, isMongoEnabled, closeMongo, getMongoStatus } = require('./src/db/mongoClient');
+const { normalizeIndianSymbol, stripExchangeSuffix } = require('./src/utils/symbols');
 const {
   initializeSessionMiddleware,
   attachUserToLocals,
@@ -165,6 +169,30 @@ function decorateLiveQuote(quote, entry, cachedAt) {
   };
 }
 
+function applySymbolMasterNames(quotes) {
+  if (!Array.isArray(quotes) || quotes.length === 0) {
+    return;
+  }
+
+  const symbolNameMap = new Map();
+  const masterItems = getSymbolMasterItems({ exchange: 'all' }) || [];
+  for (const item of masterItems) {
+    const symbol = normalizeIndianSymbol(item.symbol);
+    const name = String(item.companyName || '').trim();
+    if (symbol && name && !symbolNameMap.has(symbol)) {
+      symbolNameMap.set(symbol, name);
+    }
+  }
+
+  for (const quote of quotes) {
+    const name = symbolNameMap.get(quote.symbol);
+    const base = stripExchangeSuffix(quote.symbol);
+    if (name && (!quote.shortName || quote.shortName === base || quote.shortName === quote.symbol)) {
+      quote.shortName = name;
+    }
+  }
+}
+
 async function getWatchlistSnapshot(options = {}) {
   const forceRefresh = Boolean(options.forceRefresh);
   const nowMs = Date.now();
@@ -204,10 +232,27 @@ async function getWatchlistSnapshot(options = {}) {
     }
   }
 
+  applySymbolMasterNames(quotes);
+
+  const salesSnapshots = {};
+  for (const entry of entries) {
+    const record = getDailySalesForSymbol(entry.symbol);
+    if (record) {
+      salesSnapshots[entry.symbol] = record;
+    }
+  }
+  const salesSnapshotStatus = getDailySalesSnapshotStatus();
+  requestSalesSnapshotRefreshIfNeeded(
+    entries.map((entry) => entry.symbol),
+    { reason: 'watchlist-miss' },
+  );
+
   return {
     watchlist: entries.map((entry) => entry.symbol),
     watchlistEntries: entries,
     quotes,
+    salesSnapshots,
+    salesSnapshotStatus,
   };
 }
 
@@ -271,6 +316,27 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     service: 'stock-news-bot',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/api/storage/status', (_req, res) => {
+  const mongo = getMongoStatus();
+  const db = readDb();
+
+  res.json({
+    ok: true,
+    storage: {
+      active: mongo.connected ? 'mongo' : 'json',
+      configured: mongo.configured ? 'mongo' : 'json',
+      dataFilePath: config.dataFilePath,
+      mongoDb: config.mongoDbName || '',
+    },
+    mongo,
+    stats: {
+      watchlist: db.watchlist.length,
+      portfolio: db.portfolio.length,
+    },
     timestamp: new Date().toISOString(),
   });
 });
@@ -339,6 +405,66 @@ app.get('/api/sales/:symbol', (req, res, next) => {
     }
 
     res.json(record);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/watchlist/entries', async (_req, res, next) => {
+  try {
+    const entries = await getWatchlistEntries();
+    const symbols = entries.map((entry) => entry.symbol);
+    const salesSnapshotStatus = getDailySalesSnapshotStatus();
+    requestSalesSnapshotRefreshIfNeeded(symbols, { reason: 'watchlist-entries' });
+
+    res.json({
+      watchlist: symbols,
+      watchlistEntries: entries,
+      salesSnapshotStatus,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/watchlist/chunk', async (req, res, next) => {
+  try {
+    const raw = String(req.query.symbols || '').trim();
+    const symbols = raw
+      ? raw.split(',').map((item) => normalizeIndianSymbol(item)).filter(Boolean)
+      : [];
+    const uniqueSymbols = Array.from(new Set(symbols));
+
+    if (uniqueSymbols.length === 0) {
+      res.json({
+        symbols: [],
+        quotes: [],
+        salesSnapshots: {},
+        salesSnapshotStatus: getDailySalesSnapshotStatus(),
+      });
+      return;
+    }
+
+    const quotes = await getQuotes(uniqueSymbols);
+    applySymbolMasterNames(quotes);
+
+    const salesSnapshots = {};
+    for (const symbol of uniqueSymbols) {
+      const record = getDailySalesForSymbol(symbol);
+      if (record) {
+        salesSnapshots[symbol] = record;
+      }
+    }
+
+    const salesSnapshotStatus = getDailySalesSnapshotStatus();
+    requestSalesSnapshotRefreshIfNeeded(uniqueSymbols, { reason: 'watchlist-chunk' });
+
+    res.json({
+      symbols: uniqueSymbols,
+      quotes,
+      salesSnapshots,
+      salesSnapshotStatus,
+    });
   } catch (error) {
     next(error);
   }
@@ -656,7 +782,12 @@ function printBootBanner() {
   console.log(`[boot] ${startupTime} starting stock tracker`);
   console.log(`[boot] node=${process.version} pid=${process.pid}`);
   console.log(`[boot] cwd=${process.cwd()}`);
-  console.log(`[boot] host=${config.host} port=${config.port} dataFile=${config.dataFilePath}`);
+  if (isMongoEnabled()) {
+    const dbName = config.mongoDbName || 'default';
+    console.log(`[boot] host=${config.host} port=${config.port} mongo=enabled db=${dbName}`);
+  } else {
+    console.log(`[boot] host=${config.host} port=${config.port} dataFile=${config.dataFilePath}`);
+  }
   console.log(`[boot] marketProviders=${effectiveProviders.join(' -> ')}`);
   const providerKeys = [];
   if (effectiveProviders.includes('twelvedata')) {
@@ -670,8 +801,14 @@ function printBootBanner() {
   }
 }
 
-function bootstrapStorage() {
+async function bootstrapStorage() {
   try {
+    await initializeStore();
+    await ensureMongoIndexes();
+    const mongoStatus = getMongoStatus();
+    if (mongoStatus.configured && !mongoStatus.connected) {
+      console.warn('[boot] mongo unavailable; using JSON storage');
+    }
     const db = readDb();
     console.log(`[boot] storage ok (watchlist=${db.watchlist.length}, portfolio=${db.portfolio.length})`);
   } catch (error) {
@@ -680,40 +817,50 @@ function bootstrapStorage() {
   }
 }
 
-printBootBanner();
-bootstrapStorage();
-const symbolMasterStatus = initializeSymbolMaster();
-console.log(
-  `[boot] symbolMaster loaded=${symbolMasterStatus.totalSymbols} lastRefresh=${symbolMasterStatus.lastRefreshAt || 'never'} scheduler=${symbolMasterStatus.schedulerMode}${symbolMasterStatus.schedulerExpression ? `(${symbolMasterStatus.schedulerExpression} ${symbolMasterStatus.schedulerTimezone})` : ''}`,
-);
-const salesSnapshotStatus = initializeDailySalesSnapshot();
-console.log(
-  `[boot] salesSnapshot stored=${salesSnapshotStatus.totalStoredSymbols} scheduler=${salesSnapshotStatus.schedulerMode}${salesSnapshotStatus.schedulerExpression ? `(${salesSnapshotStatus.schedulerExpression} ${salesSnapshotStatus.schedulerTimezone})` : ''} enabled=${salesSnapshotStatus.enabled ? 'yes' : 'no'}`,
-);
+async function startServer() {
+  printBootBanner();
+  await bootstrapStorage();
+  const symbolMasterStatus = await initializeSymbolMaster();
+  console.log(
+    `[boot] symbolMaster loaded=${symbolMasterStatus.totalSymbols} lastRefresh=${symbolMasterStatus.lastRefreshAt || 'never'} scheduler=${symbolMasterStatus.schedulerMode}${symbolMasterStatus.schedulerExpression ? `(${symbolMasterStatus.schedulerExpression} ${symbolMasterStatus.schedulerTimezone})` : ''}`,
+  );
+  const salesSnapshotStatus = await initializeDailySalesSnapshot();
+  console.log(
+    `[boot] salesSnapshot stored=${salesSnapshotStatus.totalStoredSymbols} scheduler=${salesSnapshotStatus.schedulerMode}${salesSnapshotStatus.schedulerExpression ? `(${salesSnapshotStatus.schedulerExpression} ${salesSnapshotStatus.schedulerTimezone})` : ''} enabled=${salesSnapshotStatus.enabled ? 'yes' : 'no'}`,
+  );
 
-const server = app.listen(config.port, config.host, () => {
-  console.log(`[boot] listening on http://${config.host}:${config.port}`);
-  setupDevAutoReloadWatcher();
-});
+  const server = app.listen(config.port, config.host, () => {
+    console.log(`[boot] listening on http://${config.host}:${config.port}`);
+    setupDevAutoReloadWatcher();
+  });
 
-server.on('error', (error) => {
-  console.error('[boot] listen error:', error);
+  server.on('error', (error) => {
+    console.error('[boot] listen error:', error);
+    process.exit(1);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    console.error('[process] unhandledRejection:', reason);
+  });
+
+  process.on('uncaughtException', (error) => {
+    console.error('[process] uncaughtException:', error);
+    process.exit(1);
+  });
+
+  process.on('SIGTERM', () => {
+    if (devWatcher) {
+      devWatcher.close();
+    }
+    stopSymbolMasterRefresh();
+    stopDailySalesSnapshot();
+    closeMongo().catch((error) => {
+      console.error('[boot] mongo close failed:', error);
+    });
+  });
+}
+
+startServer().catch((error) => {
+  console.error('[boot] startup failed:', error);
   process.exit(1);
-});
-
-process.on('unhandledRejection', (reason) => {
-  console.error('[process] unhandledRejection:', reason);
-});
-
-process.on('uncaughtException', (error) => {
-  console.error('[process] uncaughtException:', error);
-  process.exit(1);
-});
-
-process.on('SIGTERM', () => {
-  if (devWatcher) {
-    devWatcher.close();
-  }
-  stopSymbolMasterRefresh();
-  stopDailySalesSnapshot();
 });

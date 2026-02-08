@@ -19,45 +19,50 @@ router.get('/login', (req, res) => {
 });
 
 // Handle login
-router.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  
-  console.log('[auth] Login attempt for username:', username);
+router.post('/login', async (req, res, next) => {
+  try {
+    const { username, password } = req.body;
 
-  if (!username || !password) {
-    console.log('[auth] Missing username or password');
-    return res.render('login', { error: 'Username and password are required' });
+    console.log('[auth] Login attempt for username:', username);
+
+    if (!username || !password) {
+      console.log('[auth] Missing username or password');
+      return res.render('login', { error: 'Username and password are required' });
+    }
+
+    const user = await getUserByUsername(username);
+    console.log('[auth] User found:', !!user);
+
+    if (!user) {
+      console.log('[auth] User not found');
+      return res.render('login', { error: 'Invalid username or password' });
+    }
+
+    const passwordMatch = verifyPassword(password, user.password);
+    console.log('[auth] Password match:', passwordMatch);
+
+    if (!passwordMatch) {
+      console.log('[auth] Password does not match');
+      return res.render('login', { error: 'Invalid username or password' });
+    }
+
+    // Create session
+    console.log('[auth] Creating session for user:', username);
+    req.session.user = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
+      createdAt: user.createdAt,
+      preferences: user.preferences || await getUserPreferences(username),
+    };
+
+    console.log('[auth] Login successful, redirecting to /');
+    return res.redirect('/');
+  } catch (error) {
+    console.error('[auth] Login failed:', error);
+    return next(error);
   }
-
-  const user = getUserByUsername(username);
-  console.log('[auth] User found:', !!user);
-
-  if (!user) {
-    console.log('[auth] User not found');
-    return res.render('login', { error: 'Invalid username or password' });
-  }
-
-  const passwordMatch = verifyPassword(password, user.password);
-  console.log('[auth] Password match:', passwordMatch);
-
-  if (!passwordMatch) {
-    console.log('[auth] Password does not match');
-    return res.render('login', { error: 'Invalid username or password' });
-  }
-
-  // Create session
-  console.log('[auth] Creating session for user:', username);
-  req.session.user = {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    fullName: user.fullName,
-    createdAt: user.createdAt,
-    preferences: user.preferences || getUserPreferences(username),
-  };
-
-  console.log('[auth] Login successful, redirecting to /');
-  res.redirect('/');
 });
 
 // Logout
@@ -81,34 +86,39 @@ router.get('/settings', requireAuth, (req, res) => {
 });
 
 // Handle settings update
-router.post('/settings', requireAuth, (req, res) => {
-  const { username } = req.session.user;
-  
-  // Prepare preferences object
-  const preferences = {
-    watchlist: Boolean(req.body.watchlist),
-    portfolio: Boolean(req.body.portfolio),
-    screener: Boolean(req.body.screener),
-    news: Boolean(req.body.news),
-    earnings: Boolean(req.body.earnings),
-    darkMode: Boolean(req.body.darkMode),
-  };
+router.post('/settings', requireAuth, async (req, res, next) => {
+  try {
+    const { username } = req.session.user;
 
-  // Update preferences in database
-  const updatedUser = updateUserPreferences(username, preferences);
+    // Prepare preferences object
+    const preferences = {
+      watchlist: Boolean(req.body.watchlist),
+      portfolio: Boolean(req.body.portfolio),
+      screener: Boolean(req.body.screener),
+      news: Boolean(req.body.news),
+      earnings: Boolean(req.body.earnings),
+      darkMode: Boolean(req.body.darkMode),
+    };
 
-  if (updatedUser) {
-    // Update session
-    req.session.user.preferences = updatedUser.preferences;
-    res.render('settings', { 
-      user: req.session.user, 
-      message: '✅ Your preferences have been saved successfully!' 
+    // Update preferences in database
+    const updatedUser = await updateUserPreferences(username, preferences);
+
+    if (updatedUser) {
+      // Update session
+      req.session.user.preferences = updatedUser.preferences;
+      return res.render('settings', {
+        user: req.session.user,
+        message: '✅ Your preferences have been saved successfully!',
+      });
+    }
+
+    return res.render('settings', {
+      user: req.session.user,
+      message: null,
     });
-  } else {
-    res.render('settings', { 
-      user: req.session.user, 
-      message: null 
-    });
+  } catch (error) {
+    console.error('[auth] Settings update failed:', error);
+    return next(error);
   }
 });
 

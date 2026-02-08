@@ -3,6 +3,7 @@ const path = require('path');
 const axios = require('axios');
 const cron = require('node-cron');
 const { config } = require('../config');
+const { getDb, isMongoEnabled } = require('../db/mongoClient');
 const { normalizeIndianSymbol, stripExchangeSuffix } = require('../utils/symbols');
 
 const MIN_REFRESH_MS = 60 * 60 * 1000;
@@ -220,6 +221,16 @@ function buildBySymbolIndex(items) {
   return map;
 }
 
+function buildSourceSummary(items) {
+  const list = Array.isArray(items) ? items : [];
+  return {
+    totalSymbols: list.length,
+    nseSymbols: list.filter((item) => item.exchange === 'NSE').length,
+    bseSymbols: list.filter((item) => item.exchange === 'BSE').length,
+    errors: [],
+  };
+}
+
 function toPersistedItem(item) {
   return {
     symbol: item.symbol,
@@ -249,7 +260,7 @@ function ensureSymbolMasterFileDir() {
 function loadFromDisk() {
   try {
     if (!fs.existsSync(config.symbolMasterFilePath)) {
-      return;
+      return false;
     }
 
     const raw = fs.readFileSync(config.symbolMasterFilePath, 'utf8');
@@ -260,7 +271,7 @@ function loadFromDisk() {
     const deduped = dedupeItems(items);
 
     if (deduped.length === 0) {
-      return;
+      return false;
     }
 
     state = {
@@ -269,15 +280,14 @@ function loadFromDisk() {
       bySymbol: buildBySymbolIndex(deduped),
       lastRefreshAt: String(parsed.updatedAt || parsed.lastRefreshAt || ''),
       sourceSummary: {
-        totalSymbols: deduped.length,
-        nseSymbols: deduped.filter((item) => item.exchange === 'NSE').length,
-        bseSymbols: deduped.filter((item) => item.exchange === 'BSE').length,
-        errors: [],
+        ...buildSourceSummary(deduped),
       },
       lastError: '',
     };
+    return true;
   } catch (error) {
     state.lastError = `disk-load:${error.message}`;
+    return false;
   }
 }
 
@@ -295,6 +305,89 @@ function persistToDisk(items, summary) {
   } catch (error) {
     state.lastError = `disk-save:${error.message}`;
   }
+}
+
+async function persistToMongo(items, summary) {
+  if (!isMongoEnabled()) {
+    return;
+  }
+
+  try {
+    const db = await getDb();
+    if (!db) {
+      return;
+    }
+
+    const collection = db.collection('symbol_master');
+    await collection.deleteMany({});
+    if (items.length > 0) {
+      await collection.insertMany(items.map((item) => toPersistedItem(item)), { ordered: false });
+    }
+
+    await db.collection('symbol_master_meta').updateOne(
+      { _id: 'meta' },
+      {
+        $set: {
+          updatedAt: new Date().toISOString(),
+          summary: summary || buildSourceSummary(items),
+        },
+      },
+      { upsert: true },
+    );
+  } catch (error) {
+    state.lastError = `mongo-save:${error.message}`;
+  }
+}
+
+async function loadFromMongo() {
+  if (!isMongoEnabled()) {
+    return false;
+  }
+
+  try {
+    const db = await getDb();
+    if (!db) {
+      return false;
+    }
+
+    const collection = db.collection('symbol_master');
+    const items = await collection.find({}).toArray();
+
+    if (items.length === 0) {
+      const diskLoaded = loadFromDisk();
+      if (diskLoaded) {
+        await persistToMongo(state.items, state.sourceSummary);
+        return true;
+      }
+      return false;
+    }
+
+    const deduped = dedupeItems(items.map((item) => fromPersistedItem(item)).filter(Boolean));
+    if (deduped.length === 0) {
+      return false;
+    }
+
+    const meta = await db.collection('symbol_master_meta').findOne({ _id: 'meta' });
+    state = {
+      ...state,
+      items: deduped,
+      bySymbol: buildBySymbolIndex(deduped),
+      lastRefreshAt: String(meta?.updatedAt || ''),
+      sourceSummary: meta?.summary || buildSourceSummary(deduped),
+      lastError: '',
+    };
+    return true;
+  } catch (error) {
+    state.lastError = `mongo-load:${error.message}`;
+    return false;
+  }
+}
+
+async function persistToStore(items, summary) {
+  if (isMongoEnabled()) {
+    await persistToMongo(items, summary);
+  }
+  persistToDisk(items, summary);
 }
 
 async function fetchText(url) {
@@ -601,7 +694,7 @@ async function refreshSymbolMaster(options = {}) {
       nextRefreshAt: new Date(Date.now() + getRefreshIntervalMs()).toISOString(),
     };
 
-    persistToDisk(combined, state.sourceSummary);
+    await persistToStore(combined, state.sourceSummary);
 
     return getSymbolMasterStatus();
   })();
@@ -613,12 +706,15 @@ async function refreshSymbolMaster(options = {}) {
   }
 }
 
-function initializeSymbolMaster() {
+async function initializeSymbolMaster() {
   if (initialized) {
     return getSymbolMasterStatus();
   }
 
-  loadFromDisk();
+  const loaded = await loadFromMongo();
+  if (!loaded) {
+    loadFromDisk();
+  }
   scheduleRefreshJob();
   refreshSymbolMaster({ reason: 'startup' }).catch((error) => {
     state.lastError = `startup:${error.message}`;

@@ -1,5 +1,7 @@
 const { useEffect, useMemo, useRef, useState } = React;
 const FEED_PAGE_LIMIT = 10;
+const WATCHLIST_CHUNK_SIZE = 8;
+const WATCHLIST_CHUNK_DELAY_MS = 120;
 
 const numberFmt = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
 const currencyFmt = new Intl.NumberFormat('en-IN', {
@@ -59,6 +61,26 @@ function formatPercent(value) {
   return formatted === '--' ? '--' : `${formatted}%`;
 }
 
+function chunkArray(items, size) {
+  const list = Array.isArray(items) ? items : [];
+  const chunkSize = Math.max(Number(size) || 1, 1);
+  const chunks = [];
+  for (let index = 0; index < list.length; index += chunkSize) {
+    chunks.push(list.slice(index, index + chunkSize));
+  }
+  return chunks;
+}
+
+function mergeQuotesBySymbol(previous, nextQuotes) {
+  const map = new Map((previous || []).map((quote) => [quote.symbol, quote]));
+  for (const quote of nextQuotes || []) {
+    if (quote && quote.symbol) {
+      map.set(quote.symbol, quote);
+    }
+  }
+  return Array.from(map.values());
+}
+
 function formatStage(value) {
   return value && String(value).trim() ? String(value) : '--';
 }
@@ -110,6 +132,57 @@ function formatWatchlistTimestamp(value) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function getLatestSalesPoint(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return null;
+  }
+
+  const sales = Array.isArray(snapshot.sales) ? snapshot.sales : [];
+  const labels = Array.isArray(snapshot.quarterLabels) ? snapshot.quarterLabels : [];
+  const salesYoy = Array.isArray(snapshot.salesYoy) ? snapshot.salesYoy : [];
+
+  const index = sales.findIndex((value) => Number.isFinite(Number(value)));
+  if (index < 0) {
+    return null;
+  }
+
+  return {
+    sales: sales[index],
+    yoy: salesYoy[index],
+    label: labels[index] || '',
+  };
+}
+
+function formatSalesSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return '';
+  }
+
+  if (snapshot.dataStatus === 'error') {
+    return 'Sales snapshot error';
+  }
+
+  if (snapshot.dataStatus && snapshot.dataStatus !== 'available') {
+    return 'Sales data unavailable';
+  }
+
+  const latest = getLatestSalesPoint(snapshot);
+  if (!latest) {
+    return 'Sales data unavailable';
+  }
+
+  const parts = [`Sales ${formatNum(latest.sales)}`];
+  const yoyText = formatPercent(latest.yoy);
+  if (yoyText !== '--') {
+    parts.push(`YoY ${yoyText}`);
+  }
+  if (latest.label) {
+    parts.push(latest.label);
+  }
+
+  return parts.join(' · ');
 }
 
 function formatSourceCellValue(source, dataStatus) {
@@ -432,6 +505,10 @@ function App() {
 
   const [watchlist, setWatchlist] = useState([]);
   const [quotes, setQuotes] = useState([]);
+  const [salesSnapshots, setSalesSnapshots] = useState({});
+  const [salesSnapshotStatus, setSalesSnapshotStatus] = useState({});
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [watchlistChunkLoading, setWatchlistChunkLoading] = useState(false);
   const [portfolio, setPortfolio] = useState({ positions: [], summary: { invested: 0, current: 0, pnl: 0, pnlPercent: 0 } });
   const [news, setNews] = useState([]);
   const [feedPage, setFeedPage] = useState({
@@ -463,13 +540,22 @@ function App() {
   const newsListRef = useRef(null);
   const feedLoadTriggerRef = useRef(null);
   const feedRequestInFlightRef = useRef(false);
+  const watchlistChunkRequestRef = useRef(0);
 
   function applyWatchlistSnapshot(payload) {
     const nextWatchlist = Array.isArray(payload?.watchlistEntries)
       ? payload.watchlistEntries
       : (payload?.watchlist || []).map((symbol) => ({ symbol, liveData: false, cachedAt: '' }));
     setWatchlist(nextWatchlist);
-    setQuotes(Array.isArray(payload?.quotes) ? payload.quotes : []);
+    if (Array.isArray(payload?.quotes)) {
+      setQuotes(payload.quotes);
+    }
+    if (payload?.salesSnapshots && typeof payload.salesSnapshots === 'object') {
+      setSalesSnapshots(payload.salesSnapshots);
+    }
+    if (payload?.salesSnapshotStatus && typeof payload.salesSnapshotStatus === 'object') {
+      setSalesSnapshotStatus(payload.salesSnapshotStatus);
+    }
   }
 
   const quoteMap = useMemo(() => new Map(quotes.map((quote) => [quote.symbol, quote])), [quotes]);
@@ -481,20 +567,26 @@ function App() {
       }
 
       const quote = quoteMap.get(symbol);
-      const displayName = quote?.shortName && quote.shortName !== symbol
-        ? quote.shortName
+      const salesSnapshot = salesSnapshots?.[symbol] || null;
+      const nameCandidate = quote?.shortName || salesSnapshot?.companyName || '';
+      const displayName = nameCandidate && nameCandidate !== symbol
+        ? nameCandidate
         : '';
+      const salesSummary = formatSalesSnapshot(salesSnapshot);
+      const salesStatus = salesSnapshot?.dataStatus || (salesSummary ? 'unavailable' : 'pending');
       return {
         symbol,
         quote,
         displayName,
+        salesSummary,
+        salesStatus,
         liveData: Boolean(entry?.liveData),
         cachedAt: entry?.cachedAt || quote?.watchlistCachedAt || '',
         sourceText: formatSourceCellValue(quote?.source, quote?.dataStatus),
         sourceTitle: formatSourceTitle(quote),
       };
     })
-    .filter(Boolean), [watchlist, quoteMap]);
+    .filter(Boolean), [watchlist, quoteMap, salesSnapshots]);
 
   const sortedWatchlistRows = useMemo(() => {
     const direction = watchlistSort.direction === 'desc' ? -1 : 1;
@@ -512,8 +604,76 @@ function App() {
     });
   }, [watchlistRows, watchlistSort]);
 
+  useEffect(() => {
+    const symbols = watchlist
+      .map((entry) => (typeof entry === 'string' ? entry : entry?.symbol))
+      .filter(Boolean);
+    const requestId = watchlistChunkRequestRef.current + 1;
+    watchlistChunkRequestRef.current = requestId;
+
+    if (symbols.length === 0) {
+      setWatchlistChunkLoading(false);
+      return undefined;
+    }
+
+    const symbolSet = new Set(symbols);
+    setQuotes((previous) => previous.filter((quote) => symbolSet.has(quote.symbol)));
+    setSalesSnapshots((previous) => {
+      const next = {};
+      symbols.forEach((symbol) => {
+        if (previous?.[symbol]) {
+          next[symbol] = previous[symbol];
+        }
+      });
+      return next;
+    });
+
+    setWatchlistChunkLoading(true);
+    const chunks = chunkArray(symbols, WATCHLIST_CHUNK_SIZE);
+
+    (async () => {
+      for (const chunk of chunks) {
+        if (requestId !== watchlistChunkRequestRef.current) {
+          return;
+        }
+        try {
+          const params = new URLSearchParams({ symbols: chunk.join(',') });
+          const response = await fetchJson(`/api/watchlist/chunk?${params.toString()}`);
+          if (requestId !== watchlistChunkRequestRef.current) {
+            return;
+          }
+
+          if (Array.isArray(response.quotes)) {
+            setQuotes((previous) => mergeQuotesBySymbol(previous, response.quotes));
+          }
+          if (response.salesSnapshots && typeof response.salesSnapshots === 'object') {
+            setSalesSnapshots((previous) => ({ ...previous, ...response.salesSnapshots }));
+          }
+          if (response.salesSnapshotStatus && typeof response.salesSnapshotStatus === 'object') {
+            setSalesSnapshotStatus(response.salesSnapshotStatus);
+          }
+        } catch (chunkError) {
+          if (requestId === watchlistChunkRequestRef.current) {
+            setError(chunkError.message);
+          }
+        }
+
+        if (WATCHLIST_CHUNK_DELAY_MS > 0) {
+          await new Promise((resolve) => setTimeout(resolve, WATCHLIST_CHUNK_DELAY_MS));
+        }
+      }
+
+      if (requestId === watchlistChunkRequestRef.current) {
+        setWatchlistChunkLoading(false);
+      }
+    })();
+
+    return undefined;
+  }, [watchlist]);
+
   async function loadAll() {
     setLoading(true);
+    setWatchlistLoading(true);
     setEventsLoading(true);
     setFeedLoadingMore(false);
     feedRequestInFlightRef.current = false;
@@ -529,13 +689,17 @@ function App() {
         limit: String(FEED_PAGE_LIMIT),
       });
 
+      const watchlistRes = await fetchJson('/api/watchlist/entries');
+      applyWatchlistSnapshot(watchlistRes);
+      setWatchlistLoading(false);
+      setLoading(false);
+
       const [portfolioRes, feedRes, eventsRes] = await Promise.all([
         fetchJson('/api/portfolio'),
-        fetchJson(`/api/feed?${feedParams.toString()}`),
+        fetchJson(`/api/feed/news?${feedParams.toString()}`),
         fetchJson(`/api/events?${eventsParams.toString()}`),
       ]);
 
-      applyWatchlistSnapshot(feedRes);
       setPortfolio(portfolioRes);
       setNews(feedRes.news || []);
       setFeedPage({
@@ -555,6 +719,7 @@ function App() {
       setError(loadError.message);
     } finally {
       setLoading(false);
+      setWatchlistLoading(false);
       setEventsLoading(false);
     }
   }
@@ -963,6 +1128,11 @@ function App() {
         <div className="symbol-cell">
           <div className="symbol-ticker">{row.symbol}</div>
           {row.displayName ? <div className="symbol-name">{row.displayName}</div> : null}
+          {row.salesSummary ? (
+            <div className={`symbol-sales ${row.salesStatus === 'available' ? '' : 'muted'}`}>{row.salesSummary}</div>
+          ) : (
+            <div className="symbol-sales muted">Sales snapshot pending</div>
+          )}
         </div>
       ),
     },
@@ -1161,9 +1331,9 @@ function App() {
           </div>
 
           <div className="panel-body">
-            {loading ? <div className="empty-state">Syncing market data...</div> : null}
+            {loading && activeTab !== 'watchlist' ? <div className="empty-state">Syncing market data...</div> : null}
 
-            {!loading && activeTab === 'watchlist' && (
+            {activeTab === 'watchlist' && (
               <TabSection
                 title="Signal Watchlist"
                 description="Track live and cached quotes, technical posture, and one-click quarterly fundamentals."
@@ -1183,6 +1353,8 @@ function App() {
                     <span className="watchlist-table-note">
                       Last updated: {formatWatchlistTimestamp(watchlistLastUpdated)}
                       {watchlistSomeLive && !watchlistAllLive ? ' | Mixed Mode' : ''}
+                      {salesSnapshotStatus?.updatedAt ? ` | Sales snapshot: ${formatCalendarTimestamp(salesSnapshotStatus.updatedAt)}` : ''}
+                      {watchlistChunkLoading ? ' | Loading quotes in batches...' : ''}
                     </span>
                   </div>
                 )}
@@ -1224,7 +1396,9 @@ function App() {
                   </div>
                 ) : null}
 
-                {watchlist.length === 0 ? (
+                {watchlistLoading && watchlist.length === 0 ? (
+                  <div className="empty-state">Loading watchlist symbols...</div>
+                ) : watchlist.length === 0 ? (
                   <div className="empty-state">Your watchlist is empty. Add a ticker to begin.</div>
                 ) : (
                   <DataTable

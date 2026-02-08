@@ -10,12 +10,12 @@ A full-stack starter for tracking Indian stocks with:
 - Feed aggregation from Google News RSS + optional Twitter/X RSS + optional NewsAPI
 - Day-wise upcoming calendar for results and concalls (watchlist/portfolio)
 - Technicals in watchlist: `EMA 50`, `EMA 200`, `30-week MA` cycle stage
-- Local JSON persistence (`data/db.json`)
+- MongoDB persistence (with JSON fallback)
 
 ## Tech stack
 - Backend: Node.js + Express
 - Frontend: React (served directly from `public/`)
-- Storage: local JSON file
+- Storage: MongoDB (or local JSON fallback)
 - Market data: provider chain (`nseindia -> bseindia -> tradingview -> yahoo -> screener fallback`)
 
 ## Quick start
@@ -27,6 +27,11 @@ npm install
 ```bash
 cp .env.example .env
 ```
+If you want MongoDB persistence, set `MONGODB_URI` (and optionally `MONGODB_DB`) in `.env`.
+If MongoDB is configured but unreachable, the app falls back to JSON files for that run.
+To push your local JSON files into Mongo/Cosmos (Mongo API), run `npm run seed:mongo`.
+The seeder also uploads `data/*.json` files into the `data_files` collection (large files are stored as metadata-only by default; override with `DATA_FILES_MAX_BYTES`).
+Note: `data/db.json` is stored as `_id: "app"` in the `app_state` collection (and also as `_id: "db.json"` in `data_files`).
 Recommended default order for Indian stocks: `nseindia,bseindia,tradingview,yahoo`.
 For BSE/SME numeric scrip codes (example: `543928.BO`), `bseindia` is used first and `screener` is auto-used as a last-resort fallback.
 For richer fundamentals, add `TWELVE_DATA_API_KEY` in `.env`.
@@ -51,7 +56,8 @@ For provider-level logs on quote fetches, set `MARKET_DATA_DEBUG=true` in `.env`
 
 ## Project structure
 - `server.js` - API server + static frontend hosting
-- `src/store.js` - local persistence and business-safe writes
+- `src/store.js` - persistence layer (MongoDB or JSON)
+- `src/db/mongoClient.js` - MongoDB connector + indexes
 - `src/services/marketDataService.js` - quote data + portfolio analytics + screener
 - `src/services/newsService.js` - watchlist news feed
 - `src/services/eventsService.js` - upcoming results/concall calendar
@@ -60,10 +66,11 @@ For provider-level logs on quote fetches, set `MARKET_DATA_DEBUG=true` in `.env`
 - `public/index.html` - React app shell
 - `public/app.js` - dashboard logic
 - `public/styles.css` - responsive UI styling
-- `data/db.json` - persisted watchlist/portfolio data
+- `data/db.json` - fallback persistence when MongoDB is not configured
 
 ## API overview
 - `GET /api/health`
+- `GET /api/storage/status` (shows Mongo vs JSON mode)
 - `GET /api/watchlist`
 - `POST /api/watchlist` `{ symbol }`
 - `PATCH /api/watchlist/live` `{ liveData: true|false }` (table-level toggle)
@@ -104,13 +111,13 @@ For provider-level logs on quote fetches, set `MARKET_DATA_DEBUG=true` in `.env`
   - Dashboard UI exposes table-level controls for `Live Data (All)`, `Refresh`, and shared `Last Updated`.
 - Symbol master refresh:
   - Universe includes NSE + BSE symbols and company names.
-  - Cache persists locally at `data/symbol_master.json`.
+  - Cache persists in MongoDB when configured (falls back to `data/symbol_master.json`).
   - Daily scheduler runs by cron (`SYMBOL_MASTER_DAILY_CRON`) with timezone (`SYMBOL_MASTER_CRON_TIMEZONE`, default `Asia/Kolkata`).
   - If cron config is invalid, service falls back to interval refresh (`SYMBOL_MASTER_REFRESH_MS`, default 24h).
   - You can force refresh via `POST /api/symbols/refresh`.
 - Daily sales snapshot refresh:
   - Pulls quarterly Sales/PAT series (plus QoQ/YoY growth) from Screener-backed financial parser for symbol-master stocks.
-  - Snapshot persists locally at `data/daily_sales.json`.
+  - Snapshot persists in MongoDB when configured (falls back to `data/daily_sales.json`).
   - Scheduler runs by cron (`SALES_SNAPSHOT_DAILY_CRON`) with timezone (`SALES_SNAPSHOT_CRON_TIMEZONE`).
   - Manual refresh endpoint: `POST /api/sales/refresh` (starts background run and returns immediately).
   - Per-symbol fetch endpoint: `GET /api/sales/:symbol`.

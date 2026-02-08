@@ -65,9 +65,9 @@ Use **UptimeRobot** (free) to ping your app every 5 minutes:
 3. Set interval to 5 minutes
 
 ### Persistent Data:
-Current setup uses JSON files. For persistent data:
-- **Option 1**: Accept daily resets
-- **Option 2**: Add MongoDB Atlas (free 512MB)
+MongoDB is supported via `MONGODB_URI`. For persistent data:
+- **Option 1**: Accept daily resets (JSON fallback)
+- **Option 2**: Add MongoDB Atlas (free 512MB) and set `MONGODB_URI`
 - **Option 3**: Upgrade to Render paid plan
 
 ---

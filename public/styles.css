@@ -790,6 +790,16 @@ tbody tr:hover {
   color: var(--ink-muted);
 }
 
+.symbol-sales {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
+.symbol-sales.muted {
+  color: rgba(91, 109, 121, 0.72);
+}
+
 .positive {
   color: var(--success);
   font-weight: 700;

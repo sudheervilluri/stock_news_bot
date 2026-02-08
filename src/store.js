@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { randomUUID } = require('crypto');
 const { config } = require('./config');
+const { getDb, isMongoEnabled } = require('./db/mongoClient');
 const { normalizeIndianSymbol } = require('./utils/symbols');
 
 const DASHBOARD_PAGE_KEYS = Object.freeze([
@@ -26,6 +27,8 @@ const defaultDb = {
 };
 
 let writeQueue = Promise.resolve();
+let cachedDb = null;
+let storeInitialized = false;
 
 function ensureDir(filePath) {
   const dirPath = path.dirname(filePath);
@@ -254,7 +257,7 @@ function normalizeDbShape(db) {
   };
 }
 
-function readDb() {
+function readDbFromDisk() {
   ensureDbFile();
   const raw = fs.readFileSync(config.dataFilePath, 'utf-8');
   const parsed = safeParseJson(raw);
@@ -266,15 +269,97 @@ function readDb() {
   return normalizeDbShape(parsed);
 }
 
+async function readDbFromMongo() {
+  const db = await getDb();
+  if (!db) {
+    return null;
+  }
+
+  const doc = await db.collection('app_state').findOne({ _id: 'app' });
+  if (!doc) {
+    return null;
+  }
+
+  const { _id, ...rest } = doc;
+  return normalizeDbShape(rest);
+}
+
+async function initializeStore() {
+  if (storeInitialized) {
+    return cachedDb || normalizeDbShape(defaultDb);
+  }
+
+  if (isMongoEnabled()) {
+    const mongoDb = await getDb();
+    if (!mongoDb) {
+      cachedDb = readDbFromDisk();
+      storeInitialized = true;
+      return cachedDb;
+    }
+
+    const collection = mongoDb.collection('app_state');
+    const existing = await collection.findOne({ _id: 'app' });
+    if (existing) {
+      const { _id, ...rest } = existing;
+      cachedDb = normalizeDbShape(rest);
+    } else {
+      const seeded = readDbFromDisk();
+      cachedDb = normalizeDbShape(seeded);
+      await collection.updateOne(
+        { _id: 'app' },
+        { $set: cachedDb },
+        { upsert: true },
+      );
+    }
+  } else {
+    cachedDb = readDbFromDisk();
+  }
+
+  storeInitialized = true;
+  return cachedDb;
+}
+
+function readDb() {
+  if (!storeInitialized) {
+    if (!isMongoEnabled()) {
+      cachedDb = readDbFromDisk();
+      storeInitialized = true;
+      return cachedDb;
+    }
+    throw new Error('Storage not initialized. Call initializeStore() first.');
+  }
+
+  return cachedDb || normalizeDbShape(defaultDb);
+}
+
 function writeDb(updater) {
-  writeQueue = writeQueue.then(() => {
-    const current = readDb();
+  writeQueue = writeQueue.then(async () => {
+    const current = cachedDb || (isMongoEnabled()
+      ? (await readDbFromMongo()) || normalizeDbShape(defaultDb)
+      : readDbFromDisk());
     const next = typeof updater === 'function' ? updater(current) : updater;
     const normalized = normalizeDbShape({
       ...next,
       updatedAt: new Date().toISOString(),
     });
-    fs.writeFileSync(config.dataFilePath, JSON.stringify(normalized, null, 2));
+
+    cachedDb = normalized;
+
+    if (isMongoEnabled()) {
+      const mongoDb = await getDb();
+      if (mongoDb) {
+        await mongoDb.collection('app_state').updateOne(
+          { _id: 'app' },
+          { $set: normalized },
+          { upsert: true },
+        );
+      } else {
+        fs.writeFileSync(config.dataFilePath, JSON.stringify(normalized, null, 2));
+      }
+    } else {
+      fs.writeFileSync(config.dataFilePath, JSON.stringify(normalized, null, 2));
+    }
+
     return normalized;
   });
 
@@ -592,6 +677,7 @@ async function deletePortfolioPosition(id) {
 }
 
 module.exports = {
+  initializeStore,
   readDb,
   writeDb,
   getWatchlist,

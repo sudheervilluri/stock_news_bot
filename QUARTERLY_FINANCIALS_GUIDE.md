@@ -43,6 +43,16 @@ The app fetches quarterly financial data from **screener.in**, a popular Indian 
 - Unavailable results are NOT cached (immediate retries allowed)
 - Includes metrics like: Revenue, Profit, EPS, Dividends, etc.
 
+### Nightly Sales Snapshot Job
+- A scheduled job captures quarterly sales metrics once per day (default **00:00 Asia/Kolkata**).
+- Scope defaults to **watchlist symbols** so watchlist rows always have sales context.
+- Snapshots are saved to MongoDB when configured (fallback `data/daily_sales.json`) for screening and reporting.
+- If a watchlist row is missing sales data, the backend will trigger an automatic background refresh (rate-limited).
+- The snapshot now stores full quarterly rows so it can serve as a fallback when screener.in is unreachable.
+- Configure with:
+  - `SALES_SNAPSHOT_SCOPE=watchlist|all`
+  - `SALES_SNAPSHOT_DAILY_CRON="0 0 * * *"`
+
 ## Workarounds
 
 ### 1. **View Data on Screener.in Directly**
@@ -130,7 +140,7 @@ This will log detailed information about data fetch attempts.
 Planned enhancements:
 1. [ ] Add support for multiple quarterly data sources
 2. [ ] Implement database caching layer
-3. [ ] Create data sync scheduled job
+3. [x] Create data sync scheduled job
 4. [ ] Add fallback to Alpha Vantage quarterly data
 5. [ ] Cache all successful fetches permanently
 6. [ ] Pre-fetch data for top 500 stocks

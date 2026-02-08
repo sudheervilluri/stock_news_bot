@@ -1,5 +1,7 @@
 const axios = require('axios');
+const fs = require('fs');
 const { config } = require('../config');
+const { getDb, isMongoEnabled } = require('../db/mongoClient');
 const { normalizeIndianSymbol, stripExchangeSuffix } = require('../utils/symbols');
 const { getSymbolMasterItems } = require('./symbolMasterService');
 
@@ -20,10 +22,13 @@ const NSE_HISTORICAL_PATH = 'https://www.nseindia.com/api/historical/cm/equity';
 const quoteCache = new Map();
 const technicalCache = new Map();
 const quarterlyFinancialCache = new Map();
+const quarterlySnapshotCache = { snapshot: null, loadedAt: 0 };
+const quarterlySnapshotRecordCache = new Map();
 const TECHNICAL_CACHE_TTL_MS = 30 * 60 * 1000;
 const TECHNICAL_NULL_CACHE_TTL_MS = 2 * 60 * 1000;
 const QUARTERLY_FINANCIAL_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const QUARTERLY_FINANCIAL_UNAVAILABLE_CACHE_TTL_MS = 0;
+const QUARTERLY_SNAPSHOT_TTL_MS = 5 * 60 * 1000;
 const TECHNICAL_LOOKBACK_DAYS = 720;
 
 let nseCookieHeader = '';
@@ -77,6 +82,83 @@ function shortError(error) {
 
 function now() {
   return Date.now();
+}
+
+function loadQuarterlySnapshotFromDisk() {
+  const elapsed = now() - quarterlySnapshotCache.loadedAt;
+  if (quarterlySnapshotCache.snapshot && elapsed < QUARTERLY_SNAPSHOT_TTL_MS) {
+    return quarterlySnapshotCache.snapshot;
+  }
+
+  try {
+    if (!fs.existsSync(config.salesSnapshotFilePath)) {
+      quarterlySnapshotCache.snapshot = null;
+      quarterlySnapshotCache.loadedAt = now();
+      return null;
+    }
+
+    const raw = fs.readFileSync(config.salesSnapshotFilePath, 'utf8');
+    const parsed = JSON.parse(raw);
+    quarterlySnapshotCache.snapshot = parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (_error) {
+    quarterlySnapshotCache.snapshot = null;
+  }
+
+  quarterlySnapshotCache.loadedAt = now();
+  return quarterlySnapshotCache.snapshot;
+}
+
+function getQuarterlySnapshotRecordFromDisk(symbol) {
+  const normalized = normalizeIndianSymbol(symbol);
+  if (!normalized) {
+    return null;
+  }
+
+  const snapshot = loadQuarterlySnapshotFromDisk();
+  const record = snapshot?.symbols?.[normalized];
+  if (!record || !Array.isArray(record.rows) || record.rows.length === 0) {
+    return null;
+  }
+
+  return record;
+}
+
+async function getQuarterlySnapshotRecordFromMongo(symbol) {
+  const normalized = normalizeIndianSymbol(symbol);
+  if (!normalized) {
+    return null;
+  }
+
+  const cached = quarterlySnapshotRecordCache.get(normalized);
+  if (cached && (now() - cached.loadedAt) < QUARTERLY_SNAPSHOT_TTL_MS) {
+    return cached.record;
+  }
+
+  try {
+    const db = await getDb();
+    if (!db) {
+      return null;
+    }
+
+    const record = await db.collection('sales_snapshots').findOne({ symbol: normalized });
+    if (!record || !Array.isArray(record.rows) || record.rows.length === 0) {
+      quarterlySnapshotRecordCache.set(normalized, { record: null, loadedAt: now() });
+      return null;
+    }
+
+    quarterlySnapshotRecordCache.set(normalized, { record, loadedAt: now() });
+    return record;
+  } catch (_error) {
+    return null;
+  }
+}
+
+async function getQuarterlySnapshotRecord(symbol) {
+  if (isMongoEnabled()) {
+    return getQuarterlySnapshotRecordFromMongo(symbol);
+  }
+
+  return getQuarterlySnapshotRecordFromDisk(symbol);
 }
 
 function formatDateDdMmYyyy(date) {
@@ -1194,6 +1276,41 @@ const symbolMasterNameIndex = {
   relaxed: null,
 };
 let bseSymbolNameIndex = null;
+let symbolMasterSymbolIndex = null;
+
+function buildSymbolMasterSymbolIndex() {
+  if (symbolMasterSymbolIndex) {
+    return symbolMasterSymbolIndex;
+  }
+
+  const index = new Map();
+  const items = getSymbolMasterItems({ exchange: 'all' }) || [];
+  for (const item of items) {
+    const symbol = normalizeIndianSymbol(item.symbol);
+    if (!symbol || index.has(symbol)) {
+      continue;
+    }
+    index.set(symbol, String(item.companyName || '').trim());
+  }
+
+  symbolMasterSymbolIndex = index;
+  return index;
+}
+
+function getSymbolMasterCompanyName(symbol) {
+  const normalized = normalizeIndianSymbol(symbol);
+  if (!normalized) {
+    return '';
+  }
+
+  const index = buildSymbolMasterSymbolIndex();
+  let name = index.get(normalized);
+  if (!name && normalized.endsWith('.BO')) {
+    const nseAlias = `${stripExchangeSuffix(normalized)}.NS`;
+    name = index.get(nseAlias);
+  }
+  return String(name || '').trim();
+}
 
 function normalizeCompanyNameForMatch(name, relaxed = false) {
   const base = String(name || '')
@@ -1497,9 +1614,11 @@ function normalizeQuoteShape(inputQuote) {
     regularMarketChangePercent = Number(((regularMarketChange / previousClose) * 100).toFixed(4));
   }
 
+  const fallbackName = getSymbolMasterCompanyName(symbol);
+
   return {
     symbol,
-    shortName: String(inputQuote.shortName || inputQuote.longName || stripExchangeSuffix(symbol)),
+    shortName: String(inputQuote.shortName || inputQuote.longName || fallbackName || stripExchangeSuffix(symbol)),
     exchange: String(inputQuote.exchange || defaultExchangeFromSymbol(symbol)),
     currency: String(inputQuote.currency || 'INR'),
     regularMarketPrice,
@@ -1636,9 +1755,10 @@ function createUnavailableQuote(symbol, reason, staleValue, attempts = []) {
     };
   }
 
+  const fallbackName = getSymbolMasterCompanyName(symbol);
   return normalizeQuoteShape({
     symbol,
-    shortName: stripExchangeSuffix(symbol),
+    shortName: fallbackName || stripExchangeSuffix(symbol),
     exchange: defaultExchangeFromSymbol(symbol),
     currency: 'INR',
     regularMarketPrice: null,
@@ -3967,6 +4087,25 @@ async function getQuarterlyFinancials(symbolInput, options = {}) {
     } catch (error) {
       providerTrace.push(`screener:error:${candidate}:${shortError(error)}`);
     }
+  }
+
+  const snapshotRecord = await getQuarterlySnapshotRecord(symbol);
+  if (snapshotRecord) {
+    const snapshotResponse = {
+      symbol,
+      companyName: snapshotRecord.companyName || stripExchangeSuffix(symbol),
+      source: snapshotRecord.source || 'snapshot',
+      sourceUrl: '',
+      dataStatus: 'snapshot',
+      updatedAt: snapshotRecord.capturedAt || snapshotRecord.snapshotDate || nowIso,
+      quarterLabels: Array.isArray(snapshotRecord.quarterLabels) ? snapshotRecord.quarterLabels : [],
+      rows: Array.isArray(snapshotRecord.rows) ? snapshotRecord.rows : [],
+      providerTrace: [...providerTrace, 'snapshot:hit'].slice(-40),
+      message: '',
+    };
+
+    quarterlyFinancialCache.set(key, { value: snapshotResponse, fetchedAt: now() });
+    return snapshotResponse;
   }
 
   const unavailable = lastUnavailable || {

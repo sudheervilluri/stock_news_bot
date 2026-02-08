@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
 const { config } = require('../config');
-const { normalizeIndianSymbol } = require('../utils/symbols');
+const { getDb, isMongoEnabled } = require('../db/mongoClient');
+const { normalizeIndianSymbol, stripExchangeSuffix } = require('../utils/symbols');
+const { getWatchlist } = require('../store');
 const { getSymbolMasterItems } = require('./symbolMasterService');
 const { getQuarterlyFinancials } = require('./marketDataService');
 
@@ -10,6 +12,7 @@ const MIN_CONCURRENCY = 1;
 const MAX_CONCURRENCY = 8;
 const MIN_LIMIT = 1;
 const MAX_LIMIT = 8;
+const AUTO_REFRESH_MIN_INTERVAL_MS = 30 * 60 * 1000;
 const DEFAULT_RUN_STATE = Object.freeze({
   status: 'idle',
   reason: '',
@@ -24,6 +27,7 @@ const DEFAULT_RUN_STATE = Object.freeze({
 let initialized = false;
 let schedulerTask = null;
 let runPromise = null;
+let lastAutoRefreshAt = 0;
 let state = {
   snapshot: createDefaultSnapshot(),
   schedulerMode: 'disabled',
@@ -59,7 +63,7 @@ function sleep(ms) {
 }
 
 function getQuarterLimit() {
-  const configured = toNumber(config.salesSnapshotQuarterLimit, 6);
+  const configured = toNumber(config.salesSnapshotQuarterLimit, 10);
   return Math.min(Math.max(configured, MIN_LIMIT), MAX_LIMIT);
 }
 
@@ -74,6 +78,36 @@ function getThrottleMs() {
 
 function getMaxSymbolsPerRun() {
   return Math.max(toNumber(config.salesSnapshotMaxSymbolsPerRun, 0), 0);
+}
+
+function getSnapshotScope() {
+  const scope = String(config.salesSnapshotScope || 'watchlist').trim().toLowerCase();
+  return scope === 'all' ? 'all' : 'watchlist';
+}
+
+let symbolMasterSymbolIndex = null;
+
+function buildSymbolMasterSymbolIndex() {
+  if (symbolMasterSymbolIndex) {
+    return symbolMasterSymbolIndex;
+  }
+
+  const index = new Map();
+  const items = getSymbolMasterItems({ exchange: 'all' }) || [];
+  for (const item of items) {
+    const symbol = normalizeIndianSymbol(item.symbol);
+    if (!symbol || index.has(symbol)) {
+      continue;
+    }
+    index.set(symbol, {
+      symbol,
+      exchange: String(item.exchange || ''),
+      companyName: String(item.companyName || ''),
+    });
+  }
+
+  symbolMasterSymbolIndex = index;
+  return index;
 }
 
 function ensureSnapshotDir() {
@@ -126,6 +160,7 @@ function normalizeSymbolRecord(symbol, rawRecord) {
     dataStatus: String(rawRecord.dataStatus || 'unavailable'),
     message: String(rawRecord.message || ''),
     quarterLabels,
+    rows: normalizeRows(rawRecord.rows),
     sales: asNumberArray(rawRecord.sales),
     pat: asNumberArray(rawRecord.pat),
     salesQoq: asNumberArray(rawRecord.salesQoq),
@@ -182,6 +217,102 @@ function saveSnapshotToDisk(snapshot) {
   }
 }
 
+async function loadSnapshotFromMongo() {
+  if (!isMongoEnabled()) {
+    return null;
+  }
+
+  try {
+    const db = await getDb();
+    if (!db) {
+      return null;
+    }
+
+    const [meta, records] = await Promise.all([
+      db.collection('sales_snapshot_meta').findOne({ _id: 'meta' }),
+      db.collection('sales_snapshots').find({}).toArray(),
+    ]);
+
+    if (!meta && records.length === 0) {
+      return null;
+    }
+
+    const symbols = {};
+    for (const record of records) {
+      const normalized = normalizeSymbolRecord(record.symbol, record);
+      if (normalized) {
+        symbols[normalized.symbol] = normalized;
+      }
+    }
+
+    return normalizeSnapshot({
+      updatedAt: meta?.updatedAt || '',
+      run: meta?.run || {},
+      symbols,
+    });
+  } catch (error) {
+    state.lastError = `sales-snapshot-mongo-load:${error.message}`;
+    return null;
+  }
+}
+
+async function saveSnapshotToMongo(snapshot) {
+  if (!isMongoEnabled()) {
+    return;
+  }
+
+  try {
+    const db = await getDb();
+    if (!db) {
+      return;
+    }
+
+    const records = Object.values(snapshot.symbols || {});
+    if (records.length > 0) {
+      const ops = records.map((record) => ({
+        updateOne: {
+          filter: { symbol: record.symbol },
+          update: { $set: record },
+          upsert: true,
+        },
+      }));
+      await db.collection('sales_snapshots').bulkWrite(ops, { ordered: false });
+    }
+
+    await db.collection('sales_snapshot_meta').updateOne(
+      { _id: 'meta' },
+      { $set: { updatedAt: snapshot.updatedAt || '', run: snapshot.run || {} } },
+      { upsert: true },
+    );
+  } catch (error) {
+    state.lastError = `sales-snapshot-mongo-save:${error.message}`;
+  }
+}
+
+async function loadSnapshotFromStore() {
+  if (isMongoEnabled()) {
+    const mongoSnapshot = await loadSnapshotFromMongo();
+    if (mongoSnapshot) {
+      return mongoSnapshot;
+    }
+
+    const diskSnapshot = loadSnapshotFromDisk();
+    if (diskSnapshot) {
+      await saveSnapshotToMongo(diskSnapshot);
+    }
+    return diskSnapshot;
+  }
+
+  return loadSnapshotFromDisk();
+}
+
+async function saveSnapshotToStore(snapshot) {
+  if (isMongoEnabled()) {
+    await saveSnapshotToMongo(snapshot);
+  }
+  saveSnapshotToDisk(snapshot);
+}
+
 function getSeriesFromRows(rows, key) {
   const row = (rows || []).find((item) => String(item?.key || '').toLowerCase() === String(key).toLowerCase());
   const values = Array.isArray(row?.values) ? row.values : [];
@@ -191,19 +322,51 @@ function getSeriesFromRows(rows, key) {
   });
 }
 
+function normalizeRows(rows) {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+
+  return rows
+    .map((row) => {
+      if (!row || typeof row !== 'object') {
+        return null;
+      }
+      const key = String(row.key || row.label || '').trim();
+      const label = String(row.label || row.key || '').trim();
+      if (!key && !label) {
+        return null;
+      }
+      const values = Array.isArray(row.values)
+        ? row.values.map((value) => {
+          const parsed = Number(value);
+          return Number.isFinite(parsed) ? parsed : null;
+        })
+        : [];
+      return {
+        key: key || label,
+        label: label || key,
+        kind: String(row.kind || ''),
+        values,
+      };
+    })
+    .filter(Boolean);
+}
+
 function hasAnyValue(values) {
   return Array.isArray(values) && values.some((value) => Number.isFinite(Number(value)));
 }
 
 function buildSalesRecord(symbolItem, financials, snapshotDate, capturedAt) {
-  const rows = Array.isArray(financials?.rows) ? financials.rows : [];
-  const sales = getSeriesFromRows(rows, 'sales');
-  const pat = getSeriesFromRows(rows, 'pat');
-  const salesQoq = getSeriesFromRows(rows, 'sales_qoq');
-  const salesYoy = getSeriesFromRows(rows, 'sales_yoy');
-  const patQoq = getSeriesFromRows(rows, 'pat_qoq');
-  const patYoy = getSeriesFromRows(rows, 'pat_yoy');
-  const hasData = hasAnyValue(sales) || hasAnyValue(pat);
+  const rawRows = Array.isArray(financials?.rows) ? financials.rows : [];
+  const sales = getSeriesFromRows(rawRows, 'sales');
+  const pat = getSeriesFromRows(rawRows, 'pat');
+  const salesQoq = getSeriesFromRows(rawRows, 'sales_qoq');
+  const salesYoy = getSeriesFromRows(rawRows, 'sales_yoy');
+  const patQoq = getSeriesFromRows(rawRows, 'pat_qoq');
+  const patYoy = getSeriesFromRows(rawRows, 'pat_yoy');
+  const rows = normalizeRows(rawRows);
+  const hasData = rows.length > 0 || hasAnyValue(sales) || hasAnyValue(pat);
 
   return {
     symbol: symbolItem.symbol,
@@ -215,6 +378,7 @@ function buildSalesRecord(symbolItem, financials, snapshotDate, capturedAt) {
     dataStatus: hasData ? 'available' : String(financials?.dataStatus || 'unavailable'),
     message: String(financials?.message || ''),
     quarterLabels: Array.isArray(financials?.quarterLabels) ? financials.quarterLabels : [],
+    rows,
     sales,
     pat,
     salesQoq,
@@ -224,7 +388,32 @@ function buildSalesRecord(symbolItem, financials, snapshotDate, capturedAt) {
   };
 }
 
-function getTargetSymbolItems() {
+async function buildWatchlistSymbolItems() {
+  const watchlist = await getWatchlist();
+  const list = Array.isArray(watchlist) ? watchlist : [];
+  const index = buildSymbolMasterSymbolIndex();
+  const deduped = new Map();
+
+  for (const rawSymbol of list) {
+    const symbol = normalizeIndianSymbol(rawSymbol);
+    if (!symbol || deduped.has(symbol)) {
+      continue;
+    }
+
+    const masterItem = index.get(symbol);
+    const exchange = String(masterItem?.exchange || (symbol.endsWith('.BO') ? 'BSE' : 'NSE'));
+    const companyName = String(masterItem?.companyName || stripExchangeSuffix(symbol));
+
+    deduped.set(symbol, { symbol, exchange, companyName });
+  }
+
+  return Array.from(deduped.values()).sort((left, right) => left.symbol.localeCompare(right.symbol, undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  }));
+}
+
+function buildAllSymbolItems() {
   const items = getSymbolMasterItems({ exchange: 'all' })
     .map((item) => ({
       symbol: normalizeIndianSymbol(item.symbol),
@@ -240,17 +429,21 @@ function getTargetSymbolItems() {
     }
   }
 
-  const sorted = Array.from(deduped.values()).sort((left, right) => left.symbol.localeCompare(right.symbol, undefined, {
+  return Array.from(deduped.values()).sort((left, right) => left.symbol.localeCompare(right.symbol, undefined, {
     numeric: true,
     sensitivity: 'base',
   }));
+}
 
+async function getTargetSymbolItems() {
+  const scope = getSnapshotScope();
+  const items = scope === 'watchlist' ? await buildWatchlistSymbolItems() : buildAllSymbolItems();
   const maxSymbols = getMaxSymbolsPerRun();
   if (maxSymbols > 0) {
-    return sorted.slice(0, maxSymbols);
+    return items.slice(0, maxSymbols);
   }
 
-  return sorted;
+  return items;
 }
 
 async function refreshDailySalesSnapshot(options = {}) {
@@ -265,7 +458,7 @@ async function refreshDailySalesSnapshot(options = {}) {
   const startedAt = new Date();
   const startedAtIso = startedAt.toISOString();
   const snapshotDate = startedAtIso.slice(0, 10);
-  const symbols = getTargetSymbolItems();
+  const symbols = await getTargetSymbolItems();
 
   state.running = true;
   state.snapshot = {
@@ -303,7 +496,14 @@ async function refreshDailySalesSnapshot(options = {}) {
         try {
           const financials = await getQuarterlyFinancials(symbolItem.symbol, { limit: quarterLimit });
           const record = buildSalesRecord(symbolItem, financials, snapshotDate, capturedAt);
-          nextRecords[symbolItem.symbol] = record;
+          const existing = state.snapshot.symbols?.[symbolItem.symbol];
+          const preserveExisting = existing
+            && existing.dataStatus === 'available'
+            && Array.isArray(existing.rows)
+            && existing.rows.length > 0
+            && record.dataStatus !== 'available';
+
+          nextRecords[symbolItem.symbol] = preserveExisting ? existing : record;
           if (record.dataStatus === 'available') {
             success += 1;
           } else {
@@ -321,6 +521,7 @@ async function refreshDailySalesSnapshot(options = {}) {
             dataStatus: 'error',
             message: String(error?.message || 'unknown error'),
             quarterLabels: [],
+            rows: [],
             sales: [],
             pat: [],
             salesQoq: [],
@@ -375,7 +576,7 @@ async function refreshDailySalesSnapshot(options = {}) {
 
       state.snapshot = nextSnapshot;
       state.lastError = '';
-      saveSnapshotToDisk(nextSnapshot);
+      await saveSnapshotToStore(nextSnapshot);
       return getDailySalesSnapshotStatus();
     } catch (error) {
       const failedAtIso = new Date().toISOString();
@@ -394,7 +595,7 @@ async function refreshDailySalesSnapshot(options = {}) {
           failed,
         },
       };
-      saveSnapshotToDisk(state.snapshot);
+      await saveSnapshotToStore(state.snapshot);
       return getDailySalesSnapshotStatus();
     } finally {
       runPromise = null;
@@ -409,6 +610,7 @@ function getDailySalesSnapshotStatus() {
   const totalStoredSymbols = Object.keys(state.snapshot.symbols || {}).length;
   return {
     enabled: Boolean(config.salesSnapshotEnabled),
+    scope: getSnapshotScope(),
     schedulerMode: state.schedulerMode,
     schedulerExpression: state.schedulerExpression,
     schedulerTimezone: state.schedulerTimezone,
@@ -427,6 +629,44 @@ function getDailySalesForSymbol(symbolInput) {
   }
 
   return state.snapshot.symbols?.[symbol] || null;
+}
+
+function hasMissingSalesRecords(symbols) {
+  const list = Array.isArray(symbols) ? symbols : [];
+  for (const rawSymbol of list) {
+    const symbol = normalizeIndianSymbol(rawSymbol);
+    if (!symbol) {
+      continue;
+    }
+    const record = state.snapshot.symbols?.[symbol];
+    if (!record || record.dataStatus !== 'available') {
+      return true;
+    }
+  }
+  return false;
+}
+
+function requestSalesSnapshotRefreshIfNeeded(symbols, options = {}) {
+  if (!config.salesSnapshotEnabled || state.running || runPromise) {
+    return false;
+  }
+
+  if (!hasMissingSalesRecords(symbols)) {
+    return false;
+  }
+
+  const nowMs = Date.now();
+  const minIntervalMs = Math.max(toNumber(options.minIntervalMs, AUTO_REFRESH_MIN_INTERVAL_MS), 0);
+  if (minIntervalMs > 0 && (nowMs - lastAutoRefreshAt) < minIntervalMs) {
+    return false;
+  }
+
+  lastAutoRefreshAt = nowMs;
+  refreshDailySalesSnapshot({ reason: String(options.reason || 'auto-miss') })
+    .catch((error) => {
+      state.lastError = `sales-snapshot-auto:${error.message}`;
+    });
+  return true;
 }
 
 function scheduleDailySnapshotJob() {
@@ -467,12 +707,12 @@ function scheduleDailySnapshotJob() {
   state.schedulerTimezone = timezone;
 }
 
-function initializeDailySalesSnapshot() {
+async function initializeDailySalesSnapshot() {
   if (initialized) {
     return getDailySalesSnapshotStatus();
   }
 
-  state.snapshot = loadSnapshotFromDisk();
+  state.snapshot = await loadSnapshotFromStore();
   scheduleDailySnapshotJob();
 
   if (config.salesSnapshotEnabled && config.salesSnapshotRunOnStartup) {
@@ -500,5 +740,6 @@ module.exports = {
   refreshDailySalesSnapshot,
   getDailySalesSnapshotStatus,
   getDailySalesForSymbol,
+  requestSalesSnapshotRefreshIfNeeded,
   stopDailySalesSnapshot,
 };

@@ -69,7 +69,7 @@ NEWS_API_KEY=your_key_here  # optional
 - **No persistent storage** - Data files reset (see below)
 
 ### Data Persistence
-The app uses file-based storage (`data/db.json`). Since Render doesn't persist files between restarts:
+The app uses MongoDB when `MONGODB_URI` is configured (and falls back to `data/db.json`). Since Render doesn't persist files between restarts:
 
 **Option 1: Accept Data Loss**
 - Watchlist and portfolio reset daily
@@ -77,8 +77,7 @@ The app uses file-based storage (`data/db.json`). Since Render doesn't persist f
 
 **Option 2: Use MongoDB (Recommended)**
 - Add MongoDB Atlas (free tier: 512MB)
-- Modify app to use MongoDB instead of JSON files
-- Configure connection string as environment variable
+- Set `MONGODB_URI` (and optionally `MONGODB_DB`) in Render environment variables
 
 **Option 3: Upgrade to Paid Plan**
 - Paid plans have persistent disks
