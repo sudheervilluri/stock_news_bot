@@ -7,12 +7,12 @@ const envPath = path.resolve(__dirname, '..', '.env');
 console.log('Loading .env from:', envPath);
 require('dotenv').config({ path: envPath });
 
-const uri = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.MONGODB_URL;
-console.log('URI variable found:', Boolean(uri));
+const uri = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/stock_news_bot';
+console.log('Using URI:', uri);
 
 if (!uri) {
     console.log('Available MONGO keys:', Object.keys(process.env).filter(k => k.includes('MONGO')));
-    console.error('MONGODB_URI Not found in environment');
+    console.error('MONGODB_URI Not found in environment and no default set');
     process.exit(1);
 }
 
