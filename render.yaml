@@ -1,0 +1,83 @@
+services:
+  - type: web
+    name: stock-news-bot
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATA_FILE_PATH
+        value: ./data/db.json
+      - key: SYMBOL_MASTER_FILE_PATH
+        value: ./data/symbol_master.json
+      - key: SALES_SNAPSHOT_FILE_PATH
+        value: ./data/daily_sales.json
+      - key: MARKET_DATA_PROVIDER_ORDER
+        value: nseindia,tradingview,yahoo
+      - key: TRADINGVIEW_SCAN_URL
+        value: https://scanner.tradingview.com/india/scan
+      - key: GOOGLE_NEWS_RSS_BASE_URL
+        value: https://news.google.com/rss/search
+      - key: GOOGLE_NEWS_RSS_LANGUAGE
+        value: en
+      - key: GOOGLE_NEWS_RSS_REGION
+        value: IN
+      - key: GOOGLE_NEWS_LOOKBACK_DAYS
+        value: 7
+      - key: MARKET_CACHE_TTL_MS
+        value: 60000
+      - key: NEWS_CACHE_TTL_MS
+        value: 600000
+      - key: EVENTS_CACHE_TTL_MS
+        value: 1800000
+      - key: FEED_MAX_ITEMS
+        value: 1000
+      - key: SYMBOL_MASTER_DAILY_CRON
+        value: 10 8 * * *
+      - key: SYMBOL_MASTER_CRON_TIMEZONE
+        value: Asia/Kolkata
+      - key: SYMBOL_MASTER_REFRESH_MS
+        value: 86400000
+      - key: SYMBOL_MASTER_SEARCH_LIMIT
+        value: 12
+      - key: SYMBOL_MASTER_REQUEST_TIMEOUT_MS
+        value: 30000
+      - key: WATCHLIST_QUOTE_CACHE_MAX_AGE_MS
+        value: 86400000
+      - key: SYMBOL_MASTER_NSE_CSV_URLS
+        value: https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv,https://archives.nseindia.com/content/equities/EQUITY_L.csv
+      - key: SYMBOL_MASTER_IIFL_CSV_URL
+        value: https://content.indiainfoline.com/IIFLTT/Scripmaster.csv
+      - key: SALES_SNAPSHOT_ENABLED
+        value: true
+      - key: SALES_SNAPSHOT_DAILY_CRON
+        value: 35 18 * * *
+      - key: SALES_SNAPSHOT_CRON_TIMEZONE
+        value: Asia/Kolkata
+      - key: SALES_SNAPSHOT_MAX_SYMBOLS_PER_RUN
+        value: 0
+      - key: SALES_SNAPSHOT_CONCURRENCY
+        value: 2
+      - key: SALES_SNAPSHOT_THROTTLE_MS
+        value: 120
+      - key: SALES_SNAPSHOT_QUARTER_LIMIT
+        value: 6
+      - key: SALES_SNAPSHOT_RUN_ON_STARTUP
+        value: false
+      - key: MARKET_DATA_DEBUG
+        value: false
+      - key: ALPHA_VANTAGE_API_KEY
+        fromDatabase:
+          name: ALPHA_VANTAGE_API_KEY
+      - key: TWELVE_DATA_API_KEY
+        fromDatabase:
+          name: TWELVE_DATA_API_KEY
+      - key: NEWS_API_KEY
+        fromDatabase:
+          name: NEWS_API_KEY

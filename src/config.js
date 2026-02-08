@@ -42,7 +42,7 @@ function parseBooleanEnv(value, fallback = false) {
 
 const config = {
   port: parseNumberEnv(process.env.PORT, 3000),
-  host: process.env.HOST || '127.0.0.1',
+  host: process.env.HOST || '0.0.0.0',
   dataFilePath: process.env.DATA_FILE_PATH || path.join(__dirname, '..', 'data', 'db.json'),
   symbolMasterFilePath: process.env.SYMBOL_MASTER_FILE_PATH || path.join(__dirname, '..', 'data', 'symbol_master.json'),
   salesSnapshotFilePath: process.env.SALES_SNAPSHOT_FILE_PATH || path.join(__dirname, '..', 'data', 'daily_sales.json'),
