@@ -10,7 +10,7 @@
       "preferences": {
         "watchlist": true,
         "portfolio": true,
-        "screener": true,
+        "screener": false,
         "news": true,
         "earnings": true,
         "darkMode": true

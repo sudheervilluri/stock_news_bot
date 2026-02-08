@@ -243,9 +243,9 @@ async function fetchJson(url, options = {}) {
 
 function sortIndicatorForColumn(sortState, key) {
   if (!sortState || sortState.key !== key) {
-    return '^v';
+    return '⇅';
   }
-  return sortState.direction === 'asc' ? '^' : 'v';
+  return sortState.direction === 'asc' ? '↑' : '↓';
 }
 
 function TabSection({
@@ -1237,7 +1237,7 @@ function App() {
                     getRowTitle={(row) => `Open quarterly financials for ${row.symbol}`}
                     onRowClick={(row) => onOpenQuarterlyModal(row.symbol)}
                     onRowKeyDown={(event, row) => onWatchlistRowKeyDown(event, row.symbol)}
-                    pageSize={30}
+                    pageSize={100}
                     minWidth={1060}
                     emptyMessage="Your watchlist is empty. Add a ticker to begin."
                   />
@@ -1341,7 +1341,7 @@ function App() {
                     columns={screenerColumns}
                     rows={screener.results}
                     rowKey={(row) => row.symbol}
-                    pageSize={25}
+                    pageSize={100}
                     minWidth={860}
                     emptyMessage="No screener results yet. Set filters and run."
                   />

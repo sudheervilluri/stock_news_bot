@@ -415,9 +415,9 @@
           "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T09:42:33.735Z",
+      "cachedAt": "2026-02-08T09:49:25.779Z",
       "createdAt": "2026-02-07T17:00:54.437Z",
-      "updatedAt": "2026-02-08T09:42:43.382Z"
+      "updatedAt": "2026-02-08T09:49:25.784Z"
     },
     {
       "symbol": "543620.BO",
@@ -427,13 +427,13 @@
         "shortName": "Insolation Energy Ltd",
         "exchange": "BSE",
         "currency": "INR",
-        "regularMarketPrice": 112.6,
-        "regularMarketChange": 10.1,
-        "regularMarketChangePercent": 9.8537,
-        "regularMarketOpen": 104,
-        "previousClose": 102.5,
-        "dayHigh": 119.35,
-        "dayLow": 101.6,
+        "regularMarketPrice": 113,
+        "regularMarketChange": null,
+        "regularMarketChangePercent": null,
+        "regularMarketOpen": null,
+        "previousClose": null,
+        "dayHigh": null,
+        "dayLow": null,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
         "marketCap": 24820000000,
@@ -454,18 +454,19 @@
         "industry": "",
         "isin": "",
         "lastUpdateTime": "06 Feb - close price",
-        "source": "bseindia",
-        "dataStatus": "live",
+        "source": "screener",
+        "dataStatus": "delayed",
         "providerTrace": [
           "nseindia:miss",
-          "hit:bseindia",
-          "enrich:bseindia(shortName)",
-          "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
+          "bseindia:miss",
+          "tradingview:error(ERR:tradingview-empty-result-set)",
+          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:543620.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
+          "hit:screener"
         ]
       },
-      "cachedAt": "2026-02-08T09:42:33.735Z",
+      "cachedAt": "2026-02-08T09:49:25.779Z",
       "createdAt": "2026-02-07T17:00:54.437Z",
-      "updatedAt": "2026-02-08T09:42:43.382Z"
+      "updatedAt": "2026-02-08T09:49:25.784Z"
     },
     {
       "symbol": "YATHARTH.NS",
@@ -1582,13 +1583,13 @@
         "shortName": "Bondada Engineering Ltd",
         "exchange": "BSE",
         "currency": "INR",
-        "regularMarketPrice": 338,
-        "regularMarketChange": null,
-        "regularMarketChangePercent": null,
-        "regularMarketOpen": null,
-        "previousClose": null,
-        "dayHigh": null,
-        "dayLow": null,
+        "regularMarketPrice": 338.2,
+        "regularMarketChange": 5.65,
+        "regularMarketChangePercent": 1.699,
+        "regularMarketOpen": 334.95,
+        "previousClose": 332.55,
+        "dayHigh": 339.5,
+        "dayLow": 330.4,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
         "marketCap": 37740000000,
@@ -1609,19 +1610,18 @@
         "industry": "",
         "isin": "",
         "lastUpdateTime": "06 Feb - close price",
-        "source": "screener",
-        "dataStatus": "delayed",
+        "source": "bseindia",
+        "dataStatus": "live",
         "providerTrace": [
           "nseindia:miss",
-          "bseindia:miss",
-          "tradingview:error(ERR:tradingview-empty-result-set)",
-          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:543971.BO:ERR_BAD_REQUEST:Request failed with status code 429;544150.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
-          "hit:screener"
+          "hit:bseindia",
+          "enrich:bseindia(shortName)",
+          "enrich:screener(marketCap,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T09:42:33.735Z",
+      "cachedAt": "2026-02-08T09:49:25.779Z",
       "createdAt": "2026-02-08T07:46:47.722Z",
-      "updatedAt": "2026-02-08T09:42:43.382Z"
+      "updatedAt": "2026-02-08T09:49:25.784Z"
     },
     {
       "symbol": "544037.BO",
@@ -1667,9 +1667,9 @@
           "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T09:42:33.735Z",
+      "cachedAt": "2026-02-08T09:49:25.779Z",
       "createdAt": "2026-02-08T07:47:03.508Z",
-      "updatedAt": "2026-02-08T09:42:43.382Z"
+      "updatedAt": "2026-02-08T09:49:25.784Z"
     },
     {
       "symbol": "AXISCADES.NS",
@@ -1913,13 +1913,13 @@
         "shortName": "KP Green Engineering Ltd",
         "exchange": "BSE",
         "currency": "INR",
-        "regularMarketPrice": 417,
-        "regularMarketChange": null,
-        "regularMarketChangePercent": null,
-        "regularMarketOpen": null,
-        "previousClose": null,
-        "dayHigh": null,
-        "dayLow": null,
+        "regularMarketPrice": 416.55,
+        "regularMarketChange": 5.35,
+        "regularMarketChangePercent": 1.3011,
+        "regularMarketOpen": 410,
+        "previousClose": 411.2,
+        "dayHigh": 422.7,
+        "dayLow": 410,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
         "marketCap": 20830000000,
@@ -1940,19 +1940,18 @@
         "industry": "",
         "isin": "",
         "lastUpdateTime": "06 Feb - close price",
-        "source": "screener",
-        "dataStatus": "delayed",
+        "source": "bseindia",
+        "dataStatus": "live",
         "providerTrace": [
           "nseindia:miss",
-          "bseindia:miss",
-          "tradingview:error(ERR:tradingview-empty-result-set)",
-          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:543971.BO:ERR_BAD_REQUEST:Request failed with status code 429;544150.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
-          "hit:screener"
+          "hit:bseindia",
+          "enrich:bseindia(shortName)",
+          "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T09:42:33.735Z",
+      "cachedAt": "2026-02-08T09:49:25.779Z",
       "createdAt": "2026-02-08T07:48:50.615Z",
-      "updatedAt": "2026-02-08T09:42:43.382Z"
+      "updatedAt": "2026-02-08T09:49:25.784Z"
     },
     {
       "symbol": "KRN.NS",
@@ -3217,5 +3216,5 @@
     "updatedAt": "2026-02-08T08:57:17.135Z"
   },
   "createdAt": "2026-02-01T09:00:00.000Z",
-  "updatedAt": "2026-02-08T09:42:43.382Z"
+  "updatedAt": "2026-02-08T09:49:25.784Z"
 }
