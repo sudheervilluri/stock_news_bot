@@ -1351,6 +1351,7 @@ async function fetchScreenerHtmlForSymbol(symbol, onlyNumericCode = false, inclu
     ? toScreenerUrlsForSymbol(toScreenerCompanyCode(symbol) ? symbol : '')
     : toScreenerUrlsForSymbol(symbol);
   if (urls.length === 0) {
+    logDebug(`No screener URLs generated for symbol: ${symbol}`);
     return includeMeta ? { html: '', url: '' } : '';
   }
 
@@ -1368,18 +1369,21 @@ async function fetchScreenerHtmlForSymbol(symbol, onlyNumericCode = false, inclu
       });
 
       if (response.status >= 400) {
+        logDebug(`Screener HTML fetch failed for ${symbol} at ${url}: HTTP ${response.status}`);
         continue;
       }
 
       const html = String(response.data || '');
       if (html.trim()) {
+        logDebug(`Screener HTML fetched successfully for ${symbol}`);
         return includeMeta ? { html, url } : html;
       }
     } catch (error) {
-      logDebug(`screener html failed for ${symbol}`, shortError(error));
+      logDebug(`screener html failed for ${symbol} at ${url}`, shortError(error));
     }
   }
 
+  logDebug(`No valid screener HTML found for ${symbol} after trying ${urls.length} URLs`);
   return includeMeta ? { html: '', url: '' } : '';
 }
 
@@ -3975,7 +3979,7 @@ async function getQuarterlyFinancials(symbolInput, options = {}) {
       quarterLabels: [],
       rows: [],
       providerTrace: providerTrace.length > 0 ? providerTrace.slice(-40) : ['screener:miss'],
-      message: 'Quarterly financial data not found for this symbol.',
+      message: 'Quarterly financial data is currently unavailable for this symbol. This might be due to: 1) The stock may not have quarterly financial data available, 2) The data source is temporarily unreachable, or 3) The symbol format may not be recognized. Please try refreshing the page or check if the symbol is correct.',
   };
 
   quarterlyFinancialCache.set(key, { value: unavailable, fetchedAt: now() });

@@ -379,13 +379,13 @@
         "shortName": "544467",
         "exchange": "BSE",
         "currency": "INR",
-        "regularMarketPrice": null,
-        "regularMarketChange": null,
-        "regularMarketChangePercent": null,
-        "regularMarketOpen": null,
-        "previousClose": null,
-        "dayHigh": null,
-        "dayLow": null,
+        "regularMarketPrice": 969.25,
+        "regularMarketChange": -10.15,
+        "regularMarketChangePercent": -1.0363,
+        "regularMarketOpen": 975,
+        "previousClose": 979.4,
+        "dayHigh": 975,
+        "dayLow": 960,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
         "marketCap": null,
@@ -406,32 +406,17 @@
         "industry": "",
         "isin": "",
         "lastUpdateTime": "",
-        "source": "unavailable:stale",
-        "dataStatus": "stale",
+        "source": "bseindia",
+        "dataStatus": "live",
         "providerTrace": [
           "nseindia:miss",
-          "bseindia:miss",
-          "tradingview:error(ERR:tradingview-empty-result-set)",
-          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:544467.BO:ERR_BAD_REQUEST:Request failed with status code 429;543971.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
-          "screener:miss",
-          "unavailable:all providers failed",
-          "nseindia:miss",
-          "bseindia:miss",
-          "tradingview:error(ERR:tradingview-empty-result-set)",
-          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:544467.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
-          "screener:miss",
-          "stale-cache:all providers failed",
-          "nseindia:miss",
-          "bseindia:miss",
-          "tradingview:error(ERR:tradingview-empty-result-set)",
-          "yahoo:error(ERR:yahoo-chart-empty:https://query2.finance.yahoo.com:544467.BO:ERR_BAD_REQUEST:Request failed with status code 429)",
-          "screener:miss",
-          "stale-cache:all providers failed"
+          "hit:bseindia",
+          "enrich:bseindia(shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T08:58:13.366Z",
+      "cachedAt": "2026-02-08T09:06:58.133Z",
       "createdAt": "2026-02-07T17:00:54.437Z",
-      "updatedAt": "2026-02-08T08:59:12.328Z"
+      "updatedAt": "2026-02-08T09:06:58.137Z"
     },
     {
       "symbol": "543620.BO",
@@ -476,9 +461,9 @@
           "enrich:bseindia(shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T08:58:13.366Z",
+      "cachedAt": "2026-02-08T09:06:58.133Z",
       "createdAt": "2026-02-07T17:00:54.437Z",
-      "updatedAt": "2026-02-08T08:59:12.328Z"
+      "updatedAt": "2026-02-08T09:06:58.137Z"
     },
     {
       "symbol": "YATHARTH.NS",
@@ -1630,16 +1615,16 @@
           "enrich:bseindia(shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T08:58:13.366Z",
+      "cachedAt": "2026-02-08T09:06:58.133Z",
       "createdAt": "2026-02-08T07:46:47.722Z",
-      "updatedAt": "2026-02-08T08:59:12.328Z"
+      "updatedAt": "2026-02-08T09:06:58.137Z"
     },
     {
       "symbol": "544037.BO",
       "liveData": false,
       "cachedQuote": {
         "symbol": "544037.BO",
-        "shortName": "Amic Forging Ltd",
+        "shortName": "544037",
         "exchange": "BSE",
         "currency": "INR",
         "regularMarketPrice": 1302,
@@ -1651,36 +1636,35 @@
         "dayLow": 1290.5,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
-        "marketCap": 14000000000,
-        "fiftyTwoWeekLow": 850,
-        "fiftyTwoWeekHigh": 1750,
-        "peRatio": 55.5,
+        "marketCap": null,
+        "fiftyTwoWeekLow": null,
+        "fiftyTwoWeekHigh": null,
+        "peRatio": null,
         "eps": null,
-        "pbRatio": 9.3669,
+        "pbRatio": null,
         "ema50": null,
         "ema200": null,
         "thirtyWeekSma": null,
         "marketCycleStage": "",
-        "faceValue": 10,
+        "faceValue": null,
         "vwap": null,
         "upperCircuit": null,
         "lowerCircuit": null,
         "deliveryToTradedQuantity": null,
         "industry": "",
         "isin": "",
-        "lastUpdateTime": "06 Feb - close price",
+        "lastUpdateTime": "",
         "source": "bseindia",
         "dataStatus": "live",
         "providerTrace": [
           "nseindia:miss",
           "hit:bseindia",
-          "enrich:bseindia(shortName)",
-          "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
+          "enrich:bseindia(shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T08:58:13.366Z",
+      "cachedAt": "2026-02-08T09:06:58.133Z",
       "createdAt": "2026-02-08T07:47:03.508Z",
-      "updatedAt": "2026-02-08T08:59:12.328Z"
+      "updatedAt": "2026-02-08T09:06:58.137Z"
     },
     {
       "symbol": "AXISCADES.NS",
@@ -1921,7 +1905,7 @@
       "liveData": false,
       "cachedQuote": {
         "symbol": "544150.BO",
-        "shortName": "KP Green Engineering Ltd",
+        "shortName": "544150",
         "exchange": "BSE",
         "currency": "INR",
         "regularMarketPrice": 416.55,
@@ -1933,36 +1917,35 @@
         "dayLow": 410,
         "regularMarketVolume": null,
         "averageDailyVolume3Month": null,
-        "marketCap": 20830000000,
-        "fiftyTwoWeekLow": 340,
-        "fiftyTwoWeekHigh": 627,
-        "peRatio": 19.8,
+        "marketCap": null,
+        "fiftyTwoWeekLow": null,
+        "fiftyTwoWeekHigh": null,
+        "peRatio": null,
         "eps": null,
-        "pbRatio": 5.451,
+        "pbRatio": null,
         "ema50": null,
         "ema200": null,
         "thirtyWeekSma": null,
         "marketCycleStage": "",
-        "faceValue": 5,
+        "faceValue": null,
         "vwap": null,
         "upperCircuit": null,
         "lowerCircuit": null,
         "deliveryToTradedQuantity": null,
         "industry": "",
         "isin": "",
-        "lastUpdateTime": "06 Feb - close price",
+        "lastUpdateTime": "",
         "source": "bseindia",
         "dataStatus": "live",
         "providerTrace": [
           "nseindia:miss",
           "hit:bseindia",
-          "enrich:bseindia(shortName)",
-          "enrich:screener(marketCap,peRatio,pbRatio,faceValue,fiftyTwoWeekLow,fiftyTwoWeekHigh,lastUpdateTime,shortName)"
+          "enrich:bseindia(shortName)"
         ]
       },
-      "cachedAt": "2026-02-08T08:58:13.366Z",
+      "cachedAt": "2026-02-08T09:06:58.133Z",
       "createdAt": "2026-02-08T07:48:50.615Z",
-      "updatedAt": "2026-02-08T08:59:12.328Z"
+      "updatedAt": "2026-02-08T09:06:58.137Z"
     },
     {
       "symbol": "KRN.NS",
@@ -3227,5 +3210,5 @@
     "updatedAt": "2026-02-08T08:57:17.135Z"
   },
   "createdAt": "2026-02-01T09:00:00.000Z",
-  "updatedAt": "2026-02-08T08:59:12.328Z"
+  "updatedAt": "2026-02-08T09:06:58.137Z"
 }

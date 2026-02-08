@@ -13,7 +13,7 @@
         "screener": true,
         "news": true,
         "earnings": true,
-        "darkMode": false
+        "darkMode": true
       }
     }
   ]
