@@ -605,72 +605,7 @@ function App() {
     });
   }, [watchlistRows, watchlistSort]);
 
-  useEffect(() => {
-    const symbols = watchlist
-      .map((entry) => (typeof entry === 'string' ? entry : entry?.symbol))
-      .filter(Boolean);
-    const requestId = watchlistChunkRequestRef.current + 1;
-    watchlistChunkRequestRef.current = requestId;
 
-    if (symbols.length === 0) {
-      setWatchlistChunkLoading(false);
-      return undefined;
-    }
-
-    const symbolSet = new Set(symbols);
-    setQuotes((previous) => previous.filter((quote) => symbolSet.has(quote.symbol)));
-    setSalesSnapshots((previous) => {
-      const next = {};
-      symbols.forEach((symbol) => {
-        if (previous?.[symbol]) {
-          next[symbol] = previous[symbol];
-        }
-      });
-      return next;
-    });
-
-    setWatchlistChunkLoading(true);
-    const chunks = chunkArray(symbols, WATCHLIST_CHUNK_SIZE);
-
-    (async () => {
-      for (const chunk of chunks) {
-        if (requestId !== watchlistChunkRequestRef.current) {
-          return;
-        }
-        try {
-          const params = new URLSearchParams({ symbols: chunk.join(',') });
-          const response = await fetchJson(`/api/watchlist/chunk?${params.toString()}`);
-          if (requestId !== watchlistChunkRequestRef.current) {
-            return;
-          }
-
-          if (Array.isArray(response.quotes)) {
-            setQuotes((previous) => mergeQuotesBySymbol(previous, response.quotes));
-          }
-          if (response.salesSnapshots && typeof response.salesSnapshots === 'object') {
-            setSalesSnapshots((previous) => ({ ...previous, ...response.salesSnapshots }));
-          }
-          if (response.salesSnapshotStatus && typeof response.salesSnapshotStatus === 'object') {
-            setSalesSnapshotStatus(response.salesSnapshotStatus);
-          }
-        } catch (chunkError) {
-          if (requestId === watchlistChunkRequestRef.current) {
-            setError(chunkError.message);
-          }
-        }
-
-        if (WATCHLIST_CHUNK_DELAY_MS > 0) {
-          await new Promise((resolve) => setTimeout(resolve, WATCHLIST_CHUNK_DELAY_MS));
-        }
-      }
-
-      if (requestId === watchlistChunkRequestRef.current) {
-        setWatchlistChunkLoading(false);
-      }
-    })();
-
-    return undefined;
-  }, [watchlist]);
 
   async function loadAll() {
     setLoading(true);
@@ -690,7 +625,8 @@ function App() {
         limit: String(FEED_PAGE_LIMIT),
       });
 
-      const watchlistRes = await fetchJson('/api/watchlist/entries');
+
+      const watchlistRes = await fetchJson('/api/watchlist');
       applyWatchlistSnapshot(watchlistRes);
       setWatchlistLoading(false);
       setLoading(false);
