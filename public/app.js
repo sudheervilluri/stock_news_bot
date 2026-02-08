@@ -931,7 +931,7 @@ function App() {
   const headerMetrics = [
     { label: 'Watchlist', value: watchlist.length },
     { label: 'Portfolio Value', value: formatCurrency(portfolio.summary.current) },
-    { label: 'Total P&L', value: formatCurrency(portfolio.summary.pnl) },
+    { label: 'Net P&L', value: formatCurrency(portfolio.summary.pnl) },
     { label: 'P&L %', value: formatPercent(portfolio.summary.pnlPercent) },
   ];
 
@@ -1042,7 +1042,7 @@ function App() {
           title={`Remove ${row.symbol}`}
           aria-label={`Remove ${row.symbol} from watchlist`}
         >
-          <span aria-hidden="true">&times;</span>
+          <span aria-hidden="true">Remove</span>
         </button>
       ),
     },
@@ -1112,9 +1112,9 @@ function App() {
   return (
     <div className="app-shell">
       <section className="header-card">
-        <h1 className="header-title">Indian Stock Command Center</h1>
+        <h1 className="header-title">SignalDesk Market Console</h1>
         <div className="header-subtitle">
-          Watchlist + Portfolio + Screener + News feed, all persisted locally for your project workflow.
+          Live watchlists, portfolio health, and event radar aligned in one calm trading workspace.
         </div>
         <div className="metrics-grid">
           {headerMetrics.map((metric) => (
@@ -1129,8 +1129,8 @@ function App() {
       </section>
 
       {error && (
-        <section className="panel" style={{ marginTop: 14 }}>
-          <div className="panel-body" style={{ color: '#bd3e23' }}>
+        <section className="panel alert-panel">
+          <div className="panel-body alert-panel-body">
             {error}
           </div>
         </section>
@@ -1139,28 +1139,34 @@ function App() {
       <div className="layout-grid single">
         <main className="panel">
           <div className="panel-header">
-            <h2 className="panel-title">Dashboard</h2>
+            <h2 className="panel-title">Market Workspace</h2>
             <div className="tabs">
-              {['watchlist', 'portfolio', 'screener', 'feed', 'events'].map((tab) => (
+              {[
+                { key: 'watchlist', label: 'Watchlist' },
+                { key: 'portfolio', label: 'Portfolio' },
+                { key: 'screener', label: 'Screener' },
+                { key: 'feed', label: 'Market Feed' },
+                { key: 'events', label: 'Events' },
+              ].map((tab) => (
                 <button
-                  key={tab}
-                  className={`tab-button ${activeTab === tab ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab)}
+                  key={tab.key}
+                  className={`tab-button ${activeTab === tab.key ? 'active' : ''}`}
+                  onClick={() => setActiveTab(tab.key)}
                   type="button"
                 >
-                  {tab.toUpperCase()}
+                  {tab.label}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="panel-body">
-            {loading ? <div className="empty-state">Loading data...</div> : null}
+            {loading ? <div className="empty-state">Syncing market data...</div> : null}
 
             {!loading && activeTab === 'watchlist' && (
               <TabSection
-                title="Watchlist"
-                description="Track symbols with live/cached data, technicals, and one-click quarterly drilldown."
+                title="Signal Watchlist"
+                description="Track live and cached quotes, technical posture, and one-click quarterly fundamentals."
                 toolbar={(
                   <div className="watchlist-table-tools">
                     <label className="live-toggle-control">
@@ -1169,13 +1175,13 @@ function App() {
                         checked={watchlistAllLive}
                         onChange={(event) => onToggleWatchlistLiveData(event.target.checked)}
                       />
-                      <span>Live Data (All)</span>
+                      <span>Enable live data for all</span>
                     </label>
                     <button className="secondary" type="button" onClick={onRefreshWatchlistQuotes}>
-                      Refresh
+                      Refresh quotes
                     </button>
                     <span className="watchlist-table-note">
-                      Last Updated: {formatWatchlistTimestamp(watchlistLastUpdated)}
+                      Last updated: {formatWatchlistTimestamp(watchlistLastUpdated)}
                       {watchlistSomeLive && !watchlistAllLive ? ' | Mixed Mode' : ''}
                     </span>
                   </div>
@@ -1185,7 +1191,7 @@ function App() {
                   <input
                     value={newSymbol}
                     onChange={onWatchlistInputChange}
-                    placeholder="Add symbol or company (RELIANCE / 543928 / Reliance Industries)"
+                    placeholder="Add ticker or company (RELIANCE / 543928 / Reliance Industries)"
                     list="watchlist-symbol-suggestions"
                   />
                 </form>
@@ -1202,7 +1208,7 @@ function App() {
                 {(symbolLookupLoading || symbolSuggestions.length > 0) ? (
                   <div className="symbol-suggest-wrap">
                     {symbolLookupLoading ? (
-                      <div className="symbol-suggest-meta">Searching symbol master...</div>
+                      <div className="symbol-suggest-meta">Scanning symbol master...</div>
                     ) : null}
                     {symbolSuggestions.map((item) => (
                       <button
@@ -1219,7 +1225,7 @@ function App() {
                 ) : null}
 
                 {watchlist.length === 0 ? (
-                  <div className="empty-state">No symbols in your watchlist.</div>
+                  <div className="empty-state">Your watchlist is empty. Add a ticker to begin.</div>
                 ) : (
                   <DataTable
                     columns={watchlistColumns}
@@ -1233,7 +1239,7 @@ function App() {
                     onRowKeyDown={(event, row) => onWatchlistRowKeyDown(event, row.symbol)}
                     pageSize={30}
                     minWidth={1060}
-                    emptyMessage="No symbols in your watchlist."
+                    emptyMessage="Your watchlist is empty. Add a ticker to begin."
                   />
                 )}
               </TabSection>
@@ -1241,8 +1247,8 @@ function App() {
 
             {!loading && activeTab === 'portfolio' && (
               <TabSection
-                title="Portfolio"
-                description="Maintain your positions with live valuation and P&L."
+                title="Portfolio Health"
+                description="Review holdings, exposure, and live P&L in a single at-a-glance panel."
                 footer={(
                   <span>
                     Summary: Invested {formatCurrency(portfolio.summary.invested)} | Current {formatCurrency(portfolio.summary.current)} |
@@ -1292,8 +1298,8 @@ function App() {
 
             {!loading && activeTab === 'screener' && (
               <TabSection
-                title="Screener"
-                description="Filter your tracked symbols with volume, price and momentum constraints."
+                title="Momentum Screener"
+                description="Filter tracked symbols with volume, price range, and momentum thresholds."
                 footer={<span>Matched {screener.matched} of {screener.total} watchlist stocks.</span>}
               >
                 <form className="action-row" onSubmit={onRunScreener}>
@@ -1345,8 +1351,8 @@ function App() {
 
             {!loading && activeTab === 'events' && (
               <TabSection
-                title="Events Calendar"
-                description="Upcoming results and concalls for your watchlist/portfolio."
+                title="Corporate Calendar"
+                description="Track earnings, calls, and key events for the symbols you follow."
                 footer={(
                   <span>
                     {eventsCalendar.total} upcoming events | Last refresh: {formatCalendarTimestamp(eventsCalendar.updatedAt)}
@@ -1385,7 +1391,7 @@ function App() {
                 {eventsLoading ? (
                   <div className="empty-state">Loading upcoming events...</div>
                 ) : eventsCalendar.groups.length === 0 ? (
-                  <div className="empty-state">No upcoming results or concalls found for selected stocks and window.</div>
+                  <div className="empty-state">No upcoming results or calls within this window.</div>
                 ) : (
                   <div className="events-board">
                     {eventsCalendar.groups.map((group) => (
@@ -1425,7 +1431,7 @@ function App() {
             {!loading && activeTab === 'feed' && (
               <TabSection
                 title="Market Feed"
-                description="Latest merged stream across news sources for your tracked symbols."
+                description="Unified coverage across sources for your tracked symbols."
                 footer={(
                   <span>
                     Loaded {news.length} of {feedPage.total} posts
@@ -1434,7 +1440,7 @@ function App() {
                 )}
               >
                 {news.length === 0 ? (
-                  <div className="empty-state">No news yet for current watchlist.</div>
+                  <div className="empty-state">No news yet for the current watchlist.</div>
                 ) : (
                   <div className="news-list" ref={newsListRef}>
                     {news.map((item) => (
@@ -1442,23 +1448,23 @@ function App() {
                         <h3 className="news-title">{item.title}</h3>
                         <div className="news-meta">
                           <span className="pill">{item.source}</span>
-                          <span style={{ marginLeft: 8 }}>{new Date(item.publishedAt).toLocaleString()}</span>
+                          <span className="news-meta-time">{new Date(item.publishedAt).toLocaleString()}</span>
                           {item.relatedSymbols?.length ? (
-                            <span style={{ marginLeft: 8 }}>#{item.relatedSymbols.join(' #')}</span>
+                            <span className="news-meta-tags">#{item.relatedSymbols.join(' #')}</span>
                           ) : null}
                         </div>
-                        <p style={{ marginBottom: 0 }}>{item.description}</p>
+                        <p className="news-description">{item.description}</p>
                       </article>
                     ))}
                     {feedLoadingMore ? (
-                      <div className="feed-loading">Loading next 10 posts...</div>
+                      <div className="feed-loading">Loading the next 10 posts...</div>
                     ) : null}
                     {feedPage.hasMore ? <div className="feed-load-trigger" ref={feedLoadTriggerRef} /> : null}
                   </div>
                 )}
                 {feedPage.hasMore && !feedLoadingMore ? (
                   <button className="secondary" type="button" onClick={loadMoreFeedNews}>
-                    Load Next 10
+                    Load more
                   </button>
                 ) : null}
               </TabSection>
@@ -1486,7 +1492,7 @@ function App() {
                 onClick={closeQuarterlyModal}
                 aria-label="Close quarterly financial popup"
               >
-                <span aria-hidden="true">&times;</span>
+                <span aria-hidden="true">Close</span>
               </button>
             </header>
 

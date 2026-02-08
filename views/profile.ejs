@@ -3,225 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - Stock News Bot</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        body {
-            background-color: #f5f7fa;
-            padding: 20px;
-        }
-        .navbar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 20px;
-            color: white !important;
-        }
-        .profile-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            margin-top: 30px;
-        }
-        .profile-card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            margin-bottom: 20px;
-        }
-        .profile-header {
-            display: flex;
-            align-items: center;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-        .profile-avatar {
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            color: white;
-            margin-right: 20px;
-        }
-        .profile-info h2 {
-            color: #333;
-            margin-bottom: 5px;
-            font-weight: 700;
-        }
-        .profile-info p {
-            color: #666;
-            margin: 3px 0;
-            font-size: 14px;
-        }
-        .profile-info .badge {
-            margin-top: 10px;
-            padding: 5px 10px;
-        }
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .info-item {
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            border-left: 4px solid #667eea;
-        }
-        .info-item label {
-            font-weight: 600;
-            color: #667eea;
-            font-size: 12px;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-            display: block;
-        }
-        .info-item value {
-            color: #333;
-            font-size: 16px;
-            font-weight: 500;
-        }
-        .btn-logout {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: transform 0.2s ease;
-        }
-        .btn-logout:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-            color: white;
-            text-decoration: none;
-        }
-        .section-title {
-            color: #333;
-            font-weight: 700;
-            font-size: 20px;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .nav-links a {
-            background-color: #f0f0f0;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            color: #667eea;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .nav-links a:hover {
-            background-color: #667eea;
-            color: white;
-        }
-        .nav-links a.active {
-            background-color: #667eea;
-            color: white;
-        }
-    </style>
+    <title>Profile | SignalDesk</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <a class="navbar-brand" href="/">📈 Stock News Bot</a>
-        <div class="ml-auto">
-            <span class="text-light mr-3">Welcome, <strong><%= user.fullName || user.username %></strong></span>
-            <a href="/logout" class="btn btn-logout btn-sm">Logout</a>
-        </div>
-    </nav>
+    <div class="page-shell">
+        <header class="site-nav">
+            <a class="site-brand" href="/">SignalDesk</a>
+            <nav class="site-links">
+                <a href="/">Dashboard</a>
+                <a href="/profile" class="active">Profile</a>
+                <a href="/settings">Settings</a>
+            </nav>
+            <div class="site-user">
+                Signed in as <strong><%= user.fullName || user.username %></strong>
+                <a class="nav-cta" href="/logout">Sign out</a>
+            </div>
+        </header>
 
-    <div class="profile-container">
-        <div class="nav-links">
-            <a href="/profile" class="active">👤 Profile</a>
-            <a href="/settings">⚙️ Settings</a>
-            <a href="/">📊 Dashboard</a>
-        </div>
-
-        <div class="profile-card">
-            <div class="profile-header">
-                <div class="profile-avatar">
-                    <%= user.username.charAt(0).toUpperCase() %>
-                </div>
-                <div class="profile-info">
+        <section class="card">
+            <div class="profile-hero">
+                <div class="profile-avatar"><%= user.username.charAt(0).toUpperCase() %></div>
+                <div class="profile-meta">
                     <h2><%= user.fullName || user.username %></h2>
-                    <p><i class="fas fa-user-circle"></i> @<%= user.username %></p>
-                    <p><i class="fas fa-envelope"></i> <%= user.email || 'N/A' %></p>
-                    <span class="badge badge-success">Active User</span>
+                    <p>@<%= user.username %></p>
+                    <p><%= user.email || 'Email not set' %></p>
                 </div>
             </div>
+        </section>
 
-            <div class="section-title">Account Information</div>
-            <div class="info-grid">
-                <div class="info-item">
+        <section class="card">
+            <h3>Account Overview</h3>
+            <div class="profile-grid">
+                <div class="info-tile">
                     <label>Username</label>
-                    <value><%= user.username %></value>
+                    <div><%= user.username %></div>
                 </div>
-                <div class="info-item">
+                <div class="info-tile">
                     <label>Email</label>
-                    <value><%= user.email || 'Not set' %></value>
+                    <div><%= user.email || 'Not set' %></div>
                 </div>
-                <div class="info-item">
+                <div class="info-tile">
                     <label>Full Name</label>
-                    <value><%= user.fullName || 'Not set' %></value>
+                    <div><%= user.fullName || 'Not set' %></div>
                 </div>
-                <div class="info-item">
-                    <label>Account Created</label>
-                    <value><%= new Date(user.createdAt).toLocaleDateString() %></value>
-                </div>
-            </div>
-
-            <div class="section-title">Display Preferences</div>
-            <div class="info-grid">
-                <div class="info-item">
-                    <label><i class="fas fa-check-circle"></i> Watchlist</label>
-                    <value><%= user.preferences && user.preferences.watchlist ? '✓ Enabled' : '✗ Disabled' %></value>
-                </div>
-                <div class="info-item">
-                    <label><i class="fas fa-check-circle"></i> Portfolio</label>
-                    <value><%= user.preferences && user.preferences.portfolio ? '✓ Enabled' : '✗ Disabled' %></value>
-                </div>
-                <div class="info-item">
-                    <label><i class="fas fa-check-circle"></i> Screener</label>
-                    <value><%= user.preferences && user.preferences.screener ? '✓ Enabled' : '✗ Disabled' %></value>
-                </div>
-                <div class="info-item">
-                    <label><i class="fas fa-check-circle"></i> News</label>
-                    <value><%= user.preferences && user.preferences.news ? '✓ Enabled' : '✗ Disabled' %></value>
-                </div>
-                <div class="info-item">
-                    <label><i class="fas fa-check-circle"></i> Earnings</label>
-                    <value><%= user.preferences && user.preferences.earnings ? '✓ Enabled' : '✗ Disabled' %></value>
-                </div>
-                <div class="info-item">
-                    <label><i class="fas fa-moon"></i> Dark Mode</label>
-                    <value><%= user.preferences && user.preferences.darkMode ? '✓ Enabled' : '✗ Disabled' %></value>
+                <div class="info-tile">
+                    <label>Member Since</label>
+                    <div><%= new Date(user.createdAt).toLocaleDateString() %></div>
                 </div>
             </div>
+        </section>
 
-            <div class="section-title">Quick Actions</div>
-            <p>To modify your preferences, visit the <a href="/settings" style="color: #667eea; font-weight: 600;">Settings</a> page.</p>
-        </div>
+        <section class="card">
+            <h3>Display Preferences</h3>
+            <div class="profile-grid">
+                <div class="info-tile">
+                    <label>Watchlist</label>
+                    <span class="status-pill <%= user.preferences && user.preferences.watchlist ? 'on' : 'off' %>">
+                        <%= user.preferences && user.preferences.watchlist ? 'Enabled' : 'Disabled' %>
+                    </span>
+                </div>
+                <div class="info-tile">
+                    <label>Portfolio</label>
+                    <span class="status-pill <%= user.preferences && user.preferences.portfolio ? 'on' : 'off' %>">
+                        <%= user.preferences && user.preferences.portfolio ? 'Enabled' : 'Disabled' %>
+                    </span>
+                </div>
+                <div class="info-tile">
+                    <label>Screener</label>
+                    <span class="status-pill <%= user.preferences && user.preferences.screener ? 'on' : 'off' %>">
+                        <%= user.preferences && user.preferences.screener ? 'Enabled' : 'Disabled' %>
+                    </span>
+                </div>
+                <div class="info-tile">
+                    <label>News Feed</label>
+                    <span class="status-pill <%= user.preferences && user.preferences.news ? 'on' : 'off' %>">
+                        <%= user.preferences && user.preferences.news ? 'Enabled' : 'Disabled' %>
+                    </span>
+                </div>
+                <div class="info-tile">
+                    <label>Earnings Calendar</label>
+                    <span class="status-pill <%= user.preferences && user.preferences.earnings ? 'on' : 'off' %>">
+                        <%= user.preferences && user.preferences.earnings ? 'Enabled' : 'Disabled' %>
+                    </span>
+                </div>
+                <div class="info-tile">
+                    <label>Dark Mode</label>
+                    <span class="status-pill <%= user.preferences && user.preferences.darkMode ? 'on' : 'off' %>">
+                        <%= user.preferences && user.preferences.darkMode ? 'Enabled' : 'Disabled' %>
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h3>Next Steps</h3>
+            <p>Update your preferences any time from the Settings page to tailor SignalDesk to your workflow.</p>
+        </section>
     </div>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
 </body>
 </html>
