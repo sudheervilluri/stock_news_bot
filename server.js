@@ -197,9 +197,11 @@ async function getWatchlistSnapshot(options = {}) {
   const forceRefresh = Boolean(options.forceRefresh);
   const nowMs = Date.now();
   const initialEntries = await getWatchlistEntries();
-  const symbolsToFetch = initialEntries
-    .filter((entry) => forceRefresh || shouldRefreshWatchlistEntry(entry, nowMs))
-    .map((entry) => entry.symbol);
+
+  // Only fetch external data if forced. Otherwise, rely on DB (cachedQuote).
+  const symbolsToFetch = forceRefresh
+    ? initialEntries.map((entry) => entry.symbol)
+    : [];
 
   let fetchedAtIso = '';
   let fetchedQuotes = [];
@@ -242,10 +244,14 @@ async function getWatchlistSnapshot(options = {}) {
     }
   }
   const salesSnapshotStatus = getDailySalesSnapshotStatus();
-  requestSalesSnapshotRefreshIfNeeded(
-    entries.map((entry) => entry.symbol),
-    { reason: 'watchlist-miss' },
-  );
+
+  // Only request sales refresh if specifically refreshing watchlist or if sales data missing
+  if (forceRefresh) {
+    requestSalesSnapshotRefreshIfNeeded(
+      entries.map((entry) => entry.symbol),
+      { reason: 'watchlist-refresh' },
+    );
+  }
 
   return {
     watchlist: entries.map((entry) => entry.symbol),
@@ -415,7 +421,7 @@ app.get('/api/watchlist/entries', async (_req, res, next) => {
     const entries = await getWatchlistEntries();
     const symbols = entries.map((entry) => entry.symbol);
     const salesSnapshotStatus = getDailySalesSnapshotStatus();
-    requestSalesSnapshotRefreshIfNeeded(symbols, { reason: 'watchlist-entries' });
+    // requestSalesSnapshotRefreshIfNeeded(symbols, { reason: 'watchlist-entries' });
 
     res.json({
       watchlist: symbols,
@@ -427,48 +433,7 @@ app.get('/api/watchlist/entries', async (_req, res, next) => {
   }
 });
 
-app.get('/api/watchlist/chunk', async (req, res, next) => {
-  try {
-    const raw = String(req.query.symbols || '').trim();
-    const symbols = raw
-      ? raw.split(',').map((item) => normalizeIndianSymbol(item)).filter(Boolean)
-      : [];
-    const uniqueSymbols = Array.from(new Set(symbols));
 
-    if (uniqueSymbols.length === 0) {
-      res.json({
-        symbols: [],
-        quotes: [],
-        salesSnapshots: {},
-        salesSnapshotStatus: getDailySalesSnapshotStatus(),
-      });
-      return;
-    }
-
-    const quotes = await getQuotes(uniqueSymbols);
-    applySymbolMasterNames(quotes);
-
-    const salesSnapshots = {};
-    for (const symbol of uniqueSymbols) {
-      const record = getDailySalesForSymbol(symbol);
-      if (record) {
-        salesSnapshots[symbol] = record;
-      }
-    }
-
-    const salesSnapshotStatus = getDailySalesSnapshotStatus();
-    requestSalesSnapshotRefreshIfNeeded(uniqueSymbols, { reason: 'watchlist-chunk' });
-
-    res.json({
-      symbols: uniqueSymbols,
-      quotes,
-      salesSnapshots,
-      salesSnapshotStatus,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 app.get('/api/watchlist', async (_req, res, next) => {
   try {
@@ -543,10 +508,34 @@ app.patch('/api/watchlist/live', async (req, res, next) => {
 
 app.post('/api/watchlist/refresh', async (_req, res, next) => {
   try {
-    const snapshot = await getWatchlistSnapshot({ forceRefresh: true });
+    // Return cached data immediately for fast response
+    const cachedSnapshot = await getWatchlistSnapshot({ forceRefresh: false });
     res.json({
-      ...snapshot,
+      ...cachedSnapshot,
       refreshedAt: new Date().toISOString(),
+      refreshing: true,
+    });
+
+    // Update prices in background without blocking the response
+    setImmediate(async () => {
+      try {
+        const entries = await getWatchlistEntries();
+        const symbolsToFetch = entries.map((entry) => entry.symbol);
+        if (symbolsToFetch.length > 0) {
+          const fetchedAtIso = new Date().toISOString();
+          const freshQuotes = await getQuotes(symbolsToFetch);
+          await updateWatchlistQuoteCaches(
+            freshQuotes.map((quote) => ({
+              symbol: quote.symbol,
+              quote,
+              cachedAt: fetchedAtIso,
+            })),
+          );
+          console.log(`[watchlist-refresh] Updated ${freshQuotes.length} quotes in background`);
+        }
+      } catch (backgroundError) {
+        console.error('[watchlist-refresh] Background update failed:', backgroundError.message);
+      }
     });
   } catch (error) {
     next(error);

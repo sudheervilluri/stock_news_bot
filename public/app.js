@@ -509,6 +509,7 @@ function App() {
   const [salesSnapshotStatus, setSalesSnapshotStatus] = useState({});
   const [watchlistLoading, setWatchlistLoading] = useState(false);
   const [watchlistChunkLoading, setWatchlistChunkLoading] = useState(false);
+  const [salesRefreshLoading, setSalesRefreshLoading] = useState(false);
   const [portfolio, setPortfolio] = useState({ positions: [], summary: { invested: 0, current: 0, pnl: 0, pnlPercent: 0 } });
   const [news, setNews] = useState([]);
   const [feedPage, setFeedPage] = useState({
@@ -995,6 +996,7 @@ function App() {
   }
 
   async function onRefreshWatchlistQuotes() {
+    setWatchlistLoading(true);
     try {
       const response = await fetchJson('/api/watchlist/refresh', {
         method: 'POST',
@@ -1002,6 +1004,22 @@ function App() {
       applyWatchlistSnapshot(response);
     } catch (requestError) {
       setError(requestError.message);
+    } finally {
+      setWatchlistLoading(false);
+    }
+  }
+
+  async function onRefreshSalesSnapshot() {
+    setSalesRefreshLoading(true);
+    try {
+      const response = await fetchJson('/api/sales/refresh', {
+        method: 'POST',
+      });
+      setSalesSnapshotStatus(response);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSalesRefreshLoading(false);
     }
   }
 
@@ -1349,6 +1367,14 @@ function App() {
                     </label>
                     <button className="secondary" type="button" onClick={onRefreshWatchlistQuotes}>
                       Refresh quotes
+                    </button>
+                    <button
+                      className="secondary"
+                      type="button"
+                      onClick={onRefreshSalesSnapshot}
+                      disabled={salesRefreshLoading}
+                    >
+                      {salesRefreshLoading ? 'Refreshing...' : 'Refresh sales'}
                     </button>
                     <span className="watchlist-table-note">
                       Last updated: {formatWatchlistTimestamp(watchlistLastUpdated)}

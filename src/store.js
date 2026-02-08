@@ -239,17 +239,17 @@ function normalizeDbShape(db) {
     ),
     portfolio: Array.isArray(db.portfolio)
       ? db.portfolio
-          .filter((item) => item && typeof item === 'object')
-          .map((item) => ({
-            id: item.id || randomUUID(),
-            symbol: normalizeIndianSymbol(item.symbol),
-            quantity: Number(item.quantity || 0),
-            avgPrice: Number(item.avgPrice || 0),
-            notes: item.notes || '',
-            createdAt: item.createdAt || new Date().toISOString(),
-            updatedAt: item.updatedAt || new Date().toISOString(),
-          }))
-          .filter((item) => item.symbol && item.quantity > 0)
+        .filter((item) => item && typeof item === 'object')
+        .map((item) => ({
+          id: item.id || randomUUID(),
+          symbol: normalizeIndianSymbol(item.symbol),
+          quantity: Number(item.quantity || 0),
+          avgPrice: Number(item.avgPrice || 0),
+          notes: item.notes || '',
+          createdAt: item.createdAt || new Date().toISOString(),
+          updatedAt: item.updatedAt || new Date().toISOString(),
+        }))
+        .filter((item) => item.symbol && item.quantity > 0)
       : [],
     profile: normalizeProfileSettings(db.profile, nowIso),
     createdAt: db.createdAt || nowIso,
@@ -291,8 +291,11 @@ async function initializeStore() {
 
   if (isMongoEnabled()) {
     const mongoDb = await getDb();
+    // If Mongo is enabled but connection fails, getDb returns null.
+    // In strict mode, we might want to fail or return defaultDb.
+    // For now, return defaultDb if connection fails, but DO NOT fall back to disk.
     if (!mongoDb) {
-      cachedDb = readDbFromDisk();
+      cachedDb = normalizeDbShape(defaultDb);
       storeInitialized = true;
       return cachedDb;
     }
@@ -303,8 +306,8 @@ async function initializeStore() {
       const { _id, ...rest } = existing;
       cachedDb = normalizeDbShape(rest);
     } else {
-      const seeded = readDbFromDisk();
-      cachedDb = normalizeDbShape(seeded);
+      // Initial seed for new DB
+      cachedDb = normalizeDbShape(defaultDb);
       await collection.updateOne(
         { _id: 'app' },
         { $set: cachedDb },
@@ -353,9 +356,8 @@ function writeDb(updater) {
           { $set: normalized },
           { upsert: true },
         );
-      } else {
-        fs.writeFileSync(config.dataFilePath, JSON.stringify(normalized, null, 2));
       }
+      // Strict mode: Only update cache, do NOT write to disk
     } else {
       fs.writeFileSync(config.dataFilePath, JSON.stringify(normalized, null, 2));
     }
@@ -395,10 +397,10 @@ async function addToWatchlist(symbolInput, options = {}) {
         watchlist: current.watchlist.map((entry) => (
           entry.symbol === symbol
             ? {
-                ...entry,
-                liveData: requestedLiveData,
-                updatedAt: new Date().toISOString(),
-              }
+              ...entry,
+              liveData: requestedLiveData,
+              updatedAt: new Date().toISOString(),
+            }
             : entry
         )),
       };

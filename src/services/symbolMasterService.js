@@ -353,15 +353,6 @@ async function loadFromMongo() {
     const collection = db.collection('symbol_master');
     const items = await collection.find({}).toArray();
 
-    if (items.length === 0) {
-      const diskLoaded = loadFromDisk();
-      if (diskLoaded) {
-        await persistToMongo(state.items, state.sourceSummary);
-        return true;
-      }
-      return false;
-    }
-
     const deduped = dedupeItems(items.map((item) => fromPersistedItem(item)).filter(Boolean));
     if (deduped.length === 0) {
       return false;
@@ -386,8 +377,9 @@ async function loadFromMongo() {
 async function persistToStore(items, summary) {
   if (isMongoEnabled()) {
     await persistToMongo(items, summary);
+  } else {
+    persistToDisk(items, summary);
   }
-  persistToDisk(items, summary);
 }
 
 async function fetchText(url) {

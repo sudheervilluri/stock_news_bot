@@ -291,16 +291,8 @@ async function saveSnapshotToMongo(snapshot) {
 
 async function loadSnapshotFromStore() {
   if (isMongoEnabled()) {
-    const mongoSnapshot = await loadSnapshotFromMongo();
-    if (mongoSnapshot) {
-      return mongoSnapshot;
-    }
-
-    const diskSnapshot = loadSnapshotFromDisk();
-    if (diskSnapshot) {
-      await saveSnapshotToMongo(diskSnapshot);
-    }
-    return diskSnapshot;
+    // Strict MongoDB only
+    return loadSnapshotFromMongo();
   }
 
   return loadSnapshotFromDisk();
@@ -309,8 +301,9 @@ async function loadSnapshotFromStore() {
 async function saveSnapshotToStore(snapshot) {
   if (isMongoEnabled()) {
     await saveSnapshotToMongo(snapshot);
+  } else {
+    saveSnapshotToDisk(snapshot);
   }
-  saveSnapshotToDisk(snapshot);
 }
 
 function getSeriesFromRows(rows, key) {

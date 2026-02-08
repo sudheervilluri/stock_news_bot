@@ -1,9 +1,4 @@
-const fs = require('fs');
-const path = require('path');
-const bcrypt = require('bcryptjs');
 const { getDb, isMongoEnabled } = require('../db/mongoClient');
-
-const USERS_FILE = path.join(__dirname, '..', '..', 'data', 'users.json');
 
 function normalizeUser(user) {
   if (!user || typeof user !== 'object') {
@@ -24,78 +19,30 @@ function normalizeUser(user) {
   };
 }
 
-function readUsersFromDisk() {
-  try {
-    if (fs.existsSync(USERS_FILE)) {
-      const data = fs.readFileSync(USERS_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error reading users file:', error);
-  }
-  return { users: [] };
-}
 
-function writeUsersToDisk(data) {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2), 'utf8');
-  } catch (error) {
-    console.error('Error writing users file:', error);
-  }
-}
 
-async function seedUsersToMongo(users) {
-  const db = await getDb();
-  if (!db) {
-    return;
-  }
 
-  if (!Array.isArray(users) || users.length === 0) {
-    return;
-  }
-
-  const normalized = users.map((user) => normalizeUser(user)).filter(Boolean);
-  if (normalized.length === 0) {
-    return;
-  }
-
-  await db.collection('users').deleteMany({});
-  await db.collection('users').insertMany(normalized, { ordered: false });
-}
 
 async function readUsers() {
   if (!isMongoEnabled()) {
-    return readUsersFromDisk();
+    return { users: [] };
   }
 
   try {
     const db = await getDb();
+    if (!db) return { users: [] };
     const users = await db.collection('users').find({}).toArray();
-    if (users.length === 0) {
-      const disk = readUsersFromDisk();
-      await seedUsersToMongo(disk.users || []);
-      return disk;
-    }
-
     return { users: users.map((user) => normalizeUser(user)).filter(Boolean) };
   } catch (error) {
     console.error('Error reading users from MongoDB:', error);
-    return readUsersFromDisk();
+    return { users: [] };
   }
 }
 
 async function writeUsers(data) {
-  if (!isMongoEnabled()) {
-    writeUsersToDisk(data);
-    return;
-  }
-
-  try {
-    await seedUsersToMongo(data.users || []);
-  } catch (error) {
-    console.error('Error writing users to MongoDB:', error);
-    writeUsersToDisk(data);
-  }
+  // Read-only from code perspective, usually; or implementing user management later.
+  // For now, removing disk write.
+  console.warn('writeUsers called but disk write is disabled.');
 }
 
 async function getUserByUsername(username) {
@@ -118,26 +65,17 @@ async function updateUserPreferences(username, preferences) {
       const result = await db.collection('users').findOneAndUpdate(
         { username },
         { $set: { preferences: { ...preferences } } },
-        { returnDocument: 'after' },
+        { returnDocument: 'after' }
       );
 
-      if (result.value) {
-        return normalizeUser(result.value);
+      if (result) {
+        return normalizeUser(result);
       }
     } catch (error) {
       console.error('Error updating preferences in MongoDB:', error);
     }
   }
-
-  const data = await readUsers();
-  const user = data.users.find((item) => item.username === username);
-  if (!user) {
-    return null;
-  }
-
-  user.preferences = { ...user.preferences, ...preferences };
-  await writeUsers(data);
-  return user;
+  return null;
 }
 
 async function getUserPreferences(username) {
