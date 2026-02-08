@@ -1,7 +1,6 @@
 const { useEffect, useMemo, useRef, useState } = React;
 const FEED_PAGE_LIMIT = 10;
-const WATCHLIST_CHUNK_SIZE = 8;
-const WATCHLIST_CHUNK_DELAY_MS = 120;
+
 
 const numberFmt = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
 const currencyFmt = new Intl.NumberFormat('en-IN', {
@@ -61,15 +60,7 @@ function formatPercent(value) {
   return formatted === '--' ? '--' : `${formatted}%`;
 }
 
-function chunkArray(items, size) {
-  const list = Array.isArray(items) ? items : [];
-  const chunkSize = Math.max(Number(size) || 1, 1);
-  const chunks = [];
-  for (let index = 0; index < list.length; index += chunkSize) {
-    chunks.push(list.slice(index, index + chunkSize));
-  }
-  return chunks;
-}
+
 
 function mergeQuotesBySymbol(previous, nextQuotes) {
   const map = new Map((previous || []).map((quote) => [quote.symbol, quote]));
@@ -508,7 +499,7 @@ function App() {
   const [salesSnapshots, setSalesSnapshots] = useState({});
   const [salesSnapshotStatus, setSalesSnapshotStatus] = useState({});
   const [watchlistLoading, setWatchlistLoading] = useState(false);
-  const [watchlistChunkLoading, setWatchlistChunkLoading] = useState(false);
+
   const [salesRefreshLoading, setSalesRefreshLoading] = useState(false);
   const [portfolio, setPortfolio] = useState({ positions: [], summary: { invested: 0, current: 0, pnl: 0, pnlPercent: 0 } });
   const [news, setNews] = useState([]);
@@ -541,7 +532,7 @@ function App() {
   const newsListRef = useRef(null);
   const feedLoadTriggerRef = useRef(null);
   const feedRequestInFlightRef = useRef(false);
-  const watchlistChunkRequestRef = useRef(0);
+
 
   function applyWatchlistSnapshot(payload) {
     const nextWatchlist = Array.isArray(payload?.watchlistEntries)
@@ -1316,7 +1307,7 @@ function App() {
                       Last updated: {formatWatchlistTimestamp(watchlistLastUpdated)}
                       {watchlistSomeLive && !watchlistAllLive ? ' | Mixed Mode' : ''}
                       {salesSnapshotStatus?.updatedAt ? ` | Sales snapshot: ${formatCalendarTimestamp(salesSnapshotStatus.updatedAt)}` : ''}
-                      {watchlistChunkLoading ? ' | Loading quotes in batches...' : ''}
+
                     </span>
                   </div>
                 )}
