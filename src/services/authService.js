@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const { getDb, isMongoEnabled } = require('../db/mongoClient');
 
 function normalizeUser(user) {
