@@ -597,8 +597,75 @@ async function refreshDailySalesSnapshot(options = {}) {
       state.running = false;
     }
   })();
-
   return runPromise;
+}
+
+async function refreshDailySalesForSymbol(symbolInput) {
+  const symbol = normalizeIndianSymbol(symbolInput);
+  if (!symbol) {
+    return null;
+  }
+
+  const snapshotDate = new Date().toISOString().slice(0, 10);
+  const capturedAt = new Date().toISOString();
+  const quarterLimit = getQuarterLimit();
+
+  try {
+    const symbolItem = {
+      symbol,
+      companyName: state.snapshot.symbols?.[symbol]?.companyName || '',
+      exchange: state.snapshot.symbols?.[symbol]?.exchange || '',
+    };
+
+    // Only fetch symbol master details if missing
+    if (!symbolItem.companyName || !symbolItem.exchange) {
+      const index = buildSymbolMasterSymbolIndex();
+      const masterItem = index.get(symbol);
+      if (masterItem) {
+        symbolItem.companyName = masterItem.companyName || symbolItem.companyName;
+        symbolItem.exchange = masterItem.exchange || symbolItem.exchange;
+      }
+    }
+
+    const financials = await getQuarterlyFinancials(symbol, { limit: quarterLimit });
+    const record = buildSalesRecord(symbolItem, financials, snapshotDate, capturedAt);
+
+    // Preserve existing valid data if new fetch fails or returns unavailable
+    const existing = state.snapshot.symbols?.[symbol];
+    const preserveExisting = existing
+      && existing.dataStatus === 'available'
+      && Array.isArray(existing.rows)
+      && existing.rows.length > 0
+      && record.dataStatus !== 'available';
+
+    const finalRecord = preserveExisting ? existing : record;
+
+    // Update local state
+    state.snapshot.symbols = {
+      ...(state.snapshot.symbols || {}),
+      [symbol]: finalRecord,
+    };
+
+    // Persist to store (Mongo or Disk)
+    if (isMongoEnabled()) {
+      const db = await getDb();
+      if (db) {
+        await db.collection('sales_snapshots').updateOne(
+          { symbol: finalRecord.symbol },
+          { $set: finalRecord },
+          { upsert: true }
+        );
+      }
+    } else {
+      saveSnapshotToDisk(state.snapshot);
+    }
+
+    return finalRecord;
+
+  } catch (error) {
+    console.error(`[sales-autorefresh] Failed for ${symbol}:`, error.message);
+    return null;
+  }
 }
 
 function getDailySalesSnapshotStatus() {
@@ -623,7 +690,17 @@ function getDailySalesForSymbol(symbolInput) {
     throw new Error('Invalid stock symbol.');
   }
 
-  return state.snapshot.symbols?.[symbol] || null;
+  const record = state.snapshot.symbols?.[symbol] || null;
+
+  // Auto-retry logic: If data is missing or unavailable/error, trigger a background refresh
+  if (!record || record.dataStatus === 'unavailable' || record.dataStatus === 'error') {
+    // Run in background, do not await
+    refreshDailySalesForSymbol(symbol).catch(err => {
+      console.error(`[sales-autorefresh] Trigger failed for ${symbol}:`, err.message);
+    });
+  }
+
+  return record;
 }
 
 function hasMissingSalesRecords(symbols) {
