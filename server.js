@@ -41,6 +41,11 @@ const {
 } = require('./src/services/symbolMasterService');
 const { config } = require('./src/config');
 const { normalizeIndianSymbol } = require('./src/utils/symbols');
+const {
+  initializeSessionMiddleware,
+  attachUserToLocals,
+} = require('./src/middleware/authMiddleware');
+const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
 const startupTime = new Date().toISOString();
@@ -49,8 +54,14 @@ const devReloadClients = new Set();
 let devWatcher = null;
 const WATCHLIST_TECHNICAL_RETRY_MS = 30 * 60 * 1000;
 
+// Setup EJS as view engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(initializeSessionMiddleware());
+app.use(attachUserToLocals);
 app.use(express.static(path.join(__dirname, 'public')));
 
 function parseBooleanLike(value, defaultValue = false) {
@@ -601,6 +612,9 @@ app.get('/api/db', (_req, res) => {
   // Convenience route for local inspection during development.
   res.json(readDb());
 });
+
+// Mount authentication routes
+app.use(authRoutes);
 
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

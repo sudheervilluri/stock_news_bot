@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Profile</h1>
+        <div id="user-details">
+            <h2>User Details</h2>
+            <p>Username: <span id="username"></span></p>
+        </div>
+        <div id="settings">
+            <h2>Settings</h2>
+            <form id="settings-form">
+                <h3>Display Pages</h3>
+                <label>
+                    <input type="checkbox" name="pages" value="news" checked> News
+                </label>
+                <label>
+                    <input type="checkbox" name="pages" value="market-data" checked> Market Data
+                </label>
+                <label>
+                    <input type="checkbox" name="pages" value="daily-sales" checked> Daily Sales
+                </label>
+                <label>
+                    <input type="checkbox" name="pages" value="events" checked> Events
+                </label>
+                <button type="submit">Save Settings</button>
+            </form>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

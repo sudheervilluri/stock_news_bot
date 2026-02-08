@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcg7b3XeKeUxWdeS86E36LRW9Fm",
+      "email": "admin@stocknewsbot.com",
+      "fullName": "Administrator",
+      "createdAt": "2026-02-08T00:00:00Z",
+      "preferences": {
+        "watchlist": true,
+        "portfolio": true,
+        "screener": true,
+        "news": true,
+        "earnings": true,
+        "darkMode": false
+      }
+    }
+  ]
+}
