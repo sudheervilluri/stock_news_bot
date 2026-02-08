@@ -250,6 +250,7 @@ function fromPersistedItem(item) {
 }
 
 function ensureSymbolMasterFileDir() {
+  if (!config.symbolMasterFilePath) return;
   const filePath = config.symbolMasterFilePath;
   const dirPath = path.dirname(filePath);
   if (!fs.existsSync(dirPath)) {
@@ -259,7 +260,7 @@ function ensureSymbolMasterFileDir() {
 
 function loadFromDisk() {
   try {
-    if (!fs.existsSync(config.symbolMasterFilePath)) {
+    if (!config.symbolMasterFilePath || !fs.existsSync(config.symbolMasterFilePath)) {
       return false;
     }
 
@@ -293,6 +294,7 @@ function loadFromDisk() {
 
 function persistToDisk(items, summary) {
   try {
+    if (!config.symbolMasterFilePath) return;
     ensureSymbolMasterFileDir();
     const payload = {
       version: 1,

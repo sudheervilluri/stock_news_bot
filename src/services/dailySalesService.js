@@ -111,6 +111,7 @@ function buildSymbolMasterSymbolIndex() {
 }
 
 function ensureSnapshotDir() {
+  if (!config.salesSnapshotFilePath) return;
   const filePath = config.salesSnapshotFilePath;
   const dirPath = path.dirname(filePath);
   if (!fs.existsSync(dirPath)) {
@@ -196,7 +197,7 @@ function normalizeSnapshot(rawSnapshot) {
 
 function loadSnapshotFromDisk() {
   try {
-    if (!fs.existsSync(config.salesSnapshotFilePath)) {
+    if (!config.salesSnapshotFilePath || !fs.existsSync(config.salesSnapshotFilePath)) {
       return createDefaultSnapshot();
     }
 
@@ -210,6 +211,7 @@ function loadSnapshotFromDisk() {
 
 function saveSnapshotToDisk(snapshot) {
   try {
+    if (!config.salesSnapshotFilePath) return;
     ensureSnapshotDir();
     fs.writeFileSync(config.salesSnapshotFilePath, JSON.stringify(snapshot, null, 2));
   } catch (error) {

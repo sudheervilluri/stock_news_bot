@@ -31,6 +31,7 @@ let cachedDb = null;
 let storeInitialized = false;
 
 function ensureDir(filePath) {
+  if (!filePath) return;
   const dirPath = path.dirname(filePath);
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
@@ -215,6 +216,7 @@ function migrateLegacyStocks() {
 }
 
 function ensureDbFile() {
+  if (!config.dataFilePath) return;
   ensureDir(config.dataFilePath);
   if (!fs.existsSync(config.dataFilePath)) {
     const migratedWatchlist = migrateLegacyStocks();
@@ -258,6 +260,9 @@ function normalizeDbShape(db) {
 }
 
 function readDbFromDisk() {
+  if (!config.dataFilePath) {
+    return normalizeDbShape(defaultDb);
+  }
   ensureDbFile();
   const raw = fs.readFileSync(config.dataFilePath, 'utf-8');
   const parsed = safeParseJson(raw);
