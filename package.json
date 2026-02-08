@@ -1,0 +1,29 @@
+{
+  "name": "stock_news_bot",
+  "version": "2.0.0",
+  "description": "Indian stock tracker with watchlist, portfolio, screener and feed",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "dev": "node --watch --env-file-if-exists=.env server.js",
+    "doctor": "node --env-file-if-exists=.env scripts/doctor.js",
+    "test": "node -e \"console.log('No tests configured yet')\""
+  },
+  "keywords": [
+    "stocks",
+    "india",
+    "watchlist",
+    "portfolio",
+    "react",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "node-fetch": "^3.3.2"
+  }
+}

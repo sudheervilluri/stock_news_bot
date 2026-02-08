@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock News Bot</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+        }
+        .main-content {
+            width: 70%;
+            padding: 20px;
+        }
+        .sidebar {
+            width: 30%;
+            padding: 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <h1>Stock News Bot</h1>
+            <form action="/fetch-news" method="post">
+                <button type="submit" class="btn btn-primary">Fetch News</button>
+            </form>
+            <h2>Stocks:</h2>
+            <ul class="list-group">
+                <% stocks.forEach(stock => { %>
+                    <li class="list-group-item">
+                        <%= stock %>
+                        <form action="/delete-stock" method="post" style="display: inline;">
+                            <input type="hidden" name="stockSymbol" value="<%= stock %>">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </li>
+                <% }) %>
+            </ul>
+            <h2>Add Stock:</h2>
+            <form action="/add-stock" method="post">
+                <input type="text" name="stockSymbol" placeholder="Enter stock symbol">
+                <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+            <h2>News:</h2>
+            <ul class="list-group">
+                <% news.forEach(article => { %>
+                    <li class="list-group-item">
+                        <%= article.title %> (<%= article.source.name %>)
+                        <a href="<%= article.url %>">Read more</a>
+                    </li>
+                <% }) %>
+            </ul>
+        </div>
+        <div class="sidebar">
+            <h2>Upcoming Earnings:</h2>
+            <ul class="list-group">
+                <% upcomingResults.forEach(result => { %>
+                    <li class="list-group-item">
+                        <strong><%= result.stock %></strong>: <%= result.date %>
+                        <ul>
+                            <li>Reported EPS: <%= result.reportedEPS %></li>
+                            <li>Estimated EPS: <%= result.estimatedEPS %></li>
+                        </ul>
+                    </li>
+                <% }) %>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
