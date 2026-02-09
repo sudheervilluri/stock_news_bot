@@ -51,6 +51,7 @@ const {
   attachUserToLocals,
   requireAuth,
 } = require('./src/middleware/authMiddleware');
+const { ensureDefaultAdmin } = require('./src/services/authService');
 const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();

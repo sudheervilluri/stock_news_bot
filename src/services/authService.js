@@ -101,6 +101,44 @@ async function getUserPreferences(username) {
   };
 }
 
+async function ensureDefaultAdmin() {
+  if (!isMongoEnabled()) {
+    console.log('[auth] Mongo disabled, skipping default admin check.');
+    return;
+  }
+
+  try {
+    const db = await getDb();
+    if (!db) return;
+
+    const users = db.collection('users');
+    const existing = await users.findOne({ username: 'admin' });
+    if (existing) {
+      console.log('[auth] Default admin user already exists.');
+      return;
+    }
+
+    console.log('[auth] Creating default admin user...');
+    const adminUser = {
+      username: 'admin',
+      password: bcrypt.hashSync('admin', 10), // Default password 'admin'
+      preferences: {
+        watchlist: true,
+        portfolio: true,
+        screener: true,
+        news: true,
+        earnings: true,
+        darkMode: false,
+      },
+    };
+
+    await users.insertOne(adminUser);
+    console.log('[auth] Default admin user created successfully.');
+  } catch (error) {
+    console.error('[auth] Failed to ensure default admin:', error);
+  }
+}
+
 module.exports = {
   readUsers,
   writeUsers,
@@ -109,4 +147,5 @@ module.exports = {
   hashPassword,
   updateUserPreferences,
   getUserPreferences,
+  ensureDefaultAdmin,
 };
