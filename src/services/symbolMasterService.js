@@ -336,8 +336,10 @@ async function persistToMongo(items, summary) {
       },
       { upsert: true },
     );
+    return true;
   } catch (error) {
     state.lastError = `mongo-save:${error.message}`;
+    return false;
   }
 }
 
@@ -377,9 +379,12 @@ async function loadFromMongo() {
 }
 
 async function persistToStore(items, summary) {
+  let savedToMongo = false;
   if (isMongoEnabled()) {
-    await persistToMongo(items, summary);
-  } else {
+    savedToMongo = await persistToMongo(items, summary);
+  }
+
+  if (!savedToMongo) {
     persistToDisk(items, summary);
   }
 }

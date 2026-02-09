@@ -297,10 +297,10 @@ async function initializeStore() {
   if (isMongoEnabled()) {
     const mongoDb = await getDb();
     // If Mongo is enabled but connection fails, getDb returns null.
-    // In strict mode, we might want to fail or return defaultDb.
-    // For now, return defaultDb if connection fails, but DO NOT fall back to disk.
+    // Fallback to disk if configured.
     if (!mongoDb) {
-      cachedDb = normalizeDbShape(defaultDb);
+      console.warn('[store] Mongo enabled but connection failed. Falling back to local file.');
+      cachedDb = readDbFromDisk();
       storeInitialized = true;
       return cachedDb;
     }
@@ -342,9 +342,11 @@ function readDb() {
 
 function writeDb(updater) {
   writeQueue = writeQueue.then(async () => {
-    const current = cachedDb || (isMongoEnabled()
+    const mongoEnabled = isMongoEnabled();
+    const current = cachedDb || (mongoEnabled
       ? (await readDbFromMongo()) || normalizeDbShape(defaultDb)
       : readDbFromDisk());
+
     const next = typeof updater === 'function' ? updater(current) : updater;
     const normalized = normalizeDbShape({
       ...next,
@@ -353,7 +355,7 @@ function writeDb(updater) {
 
     cachedDb = normalized;
 
-    if (isMongoEnabled()) {
+    if (mongoEnabled) {
       const mongoDb = await getDb();
       if (mongoDb) {
         await mongoDb.collection('app_state').updateOne(
@@ -361,10 +363,27 @@ function writeDb(updater) {
           { $set: normalized },
           { upsert: true },
         );
+      } else {
+        // Fallback write if Mongo enabled but down
+        if (config.dataFilePath) {
+          try {
+            ensureDir(config.dataFilePath);
+            fs.writeFileSync(config.dataFilePath, JSON.stringify(normalized, null, 2));
+          } catch (err) {
+            console.error('[store] Failed to write fallback file:', err.message);
+          }
+        }
       }
-      // Strict mode: Only update cache, do NOT write to disk
     } else {
-      fs.writeFileSync(config.dataFilePath, JSON.stringify(normalized, null, 2));
+      // Mongo disabled, write to disk
+      if (config.dataFilePath) {
+        try {
+          ensureDir(config.dataFilePath);
+          fs.writeFileSync(config.dataFilePath, JSON.stringify(normalized, null, 2));
+        } catch (err) {
+          console.error('[store] Failed to write file:', err.message);
+        }
+      }
     }
 
     return normalized;

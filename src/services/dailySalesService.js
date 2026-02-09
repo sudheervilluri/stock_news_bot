@@ -286,24 +286,32 @@ async function saveSnapshotToMongo(snapshot) {
       { $set: { updatedAt: snapshot.updatedAt || '', run: snapshot.run || {} } },
       { upsert: true },
     );
+    return true;
   } catch (error) {
     state.lastError = `sales-snapshot-mongo-save:${error.message}`;
+    return false;
   }
 }
 
 async function loadSnapshotFromStore() {
   if (isMongoEnabled()) {
-    // Strict MongoDB only
-    return loadSnapshotFromMongo();
+    const loaded = await loadSnapshotFromMongo();
+    if (loaded) {
+      return loaded;
+    }
+    // Fallback to disk if Mongo enabled but failed/empty (or returns null)
   }
 
   return loadSnapshotFromDisk();
 }
 
 async function saveSnapshotToStore(snapshot) {
+  let savedToMongo = false;
   if (isMongoEnabled()) {
-    await saveSnapshotToMongo(snapshot);
-  } else {
+    savedToMongo = await saveSnapshotToMongo(snapshot);
+  }
+
+  if (!savedToMongo) {
     saveSnapshotToDisk(snapshot);
   }
 }
