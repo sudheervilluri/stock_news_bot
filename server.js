@@ -42,6 +42,7 @@ const {
   getSymbolMasterStatus,
   stopSymbolMasterRefresh,
 } = require('./src/services/symbolMasterService');
+const { startKeepAliveService } = require('./src/services/keepAliveService');
 const { config } = require('./src/config');
 const { ensureMongoIndexes, isMongoEnabled, closeMongo, getMongoStatus } = require('./src/db/mongoClient');
 const { normalizeIndianSymbol, stripExchangeSuffix } = require('./src/utils/symbols');

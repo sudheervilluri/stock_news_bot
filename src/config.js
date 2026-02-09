@@ -65,6 +65,9 @@ const config = {
   salesSnapshotConcurrency: parseNumberEnv(process.env.SALES_SNAPSHOT_CONCURRENCY, 2),
   salesSnapshotThrottleMs: parseNumberEnv(process.env.SALES_SNAPSHOT_THROTTLE_MS, 120),
   salesSnapshotQuarterLimit: parseNumberEnv(process.env.SALES_SNAPSHOT_QUARTER_LIMIT, 6),
+  keepAliveEnabled: parseBooleanEnv(process.env.KEEP_ALIVE_ENABLED, false),
+  keepAliveUrl: process.env.KEEP_ALIVE_URL || 'https://stock-news-bot-tn2z.onrender.com/login',
+  keepAliveCron: process.env.KEEP_ALIVE_CRON || '* * * * *',
   salesSnapshotRunOnStartup: parseBooleanEnv(process.env.SALES_SNAPSHOT_RUN_ON_STARTUP, false),
   watchlistQuoteCacheMaxAgeMs: parseNumberEnv(process.env.WATCHLIST_QUOTE_CACHE_MAX_AGE_MS, 24 * 60 * 60 * 1000),
   symbolMasterNseCsvUrls: parseRawListEnv(
