@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
     "dev": "node --watch --env-file-if-exists=.env server.js",
+    "debug": "MARKET_DATA_DEBUG=true npm start",
     "doctor": "node --env-file-if-exists=.env scripts/doctor.js",
     "seed:mongo": "node --env-file-if-exists=.env scripts/seed_mongo_from_json.js",
     "test": "node -e \"console.log('No tests configured yet')\""
