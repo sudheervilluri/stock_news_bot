@@ -40,6 +40,11 @@ Netlify Functions use dynamic IP addresses (AWS Lambda).
 -   **Cold Starts**: The first request might take a few seconds.
 -   **"File not found"**: Ensure `process.cwd()` logic in `server.js` is working (it should be).
 
+## 6. Troubleshooting "Page Not Found" (After Login)
+If you can see the login page but get a 404 or redirect loop after logging in:
+-   **Cause**: In-memory sessions are lost between serverless function invocations.
+-   **Fix**: We installed `connect-mongo` to store sessions in MongoDB. Ensure your `MONGODB_URI` is correct in Netlify environment variables. The app cannot work without a valid DB connection for sessions.
+
 ## 5. Local Development
 You can test the function locally using Netlify CLI:
 ```bash

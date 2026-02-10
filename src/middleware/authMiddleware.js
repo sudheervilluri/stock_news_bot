@@ -18,16 +18,25 @@ function optionalAuth(req, res, next) {
   }
 }
 
+const MongoStore = require('connect-mongo');
+
 // Initialize session middleware
 function initializeSessionMiddleware() {
   return session({
     secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/stock_news_bot',
+      collectionName: 'sessions',
+      ttl: 24 * 60 * 60, // 1 day
+      autoRemove: 'native',
+    }),
     cookie: {
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: 'lax', // Improve compatibility
     },
   });
 }
