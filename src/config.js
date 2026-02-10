@@ -43,8 +43,8 @@ function parseBooleanEnv(value, fallback = false) {
 const config = {
   port: parseNumberEnv(process.env.PORT, 3000),
   host: process.env.HOST || '0.0.0.0',
-  mongoUri: process.env.MONGODB_URI || process.env.MONGO_URI || '',
-  mongoDbName: process.env.MONGODB_DB || process.env.MONGO_DB_NAME || '',
+  mongoUri: 'mongodb+srv://sudheervilluri_db_user:5KYG9iIyalSQ1dIw@cluster0.jinz8vz.mongodb.net/?appName=Cluster0&retryWrites=true&w=majority',
+  mongoDbName: myDatabase,
   mongoServerSelectionTimeoutMs: parseNumberEnv(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS, 10000),
   mongoTlsInsecure: parseBooleanEnv(process.env.MONGODB_TLS_INSECURE, false),
   mongoTlsSecureProtocol: process.env.MONGODB_TLS_SECURE_PROTOCOL || '',

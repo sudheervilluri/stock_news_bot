@@ -7,7 +7,7 @@ const envPath = path.resolve(__dirname, '..', '.env');
 console.log('Loading .env from:', envPath);
 require('dotenv').config({ path: envPath });
 
-const uri = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.MONGODB_URL || 'mongodb://127.0.0.1:27017/stock_news_bot';
+const uri = 'mongodb+srv://sudheervilluri_db_user:5KYG9iIyalSQ1dIw@cluster0.jinz8vz.mongodb.net/?appName=Cluster0&retryWrites=true&w=majority';
 console.log('Using URI:', uri);
 
 if (!uri) {
@@ -21,7 +21,7 @@ const client = new MongoClient(uri);
 async function run() {
     try {
         await client.connect();
-        const db = client.db(process.env.MONGODB_DB || 'stock_news_bot');
+        const db = client.db('myDatabase');
         const users = db.collection('users');
 
         const adminUser = {

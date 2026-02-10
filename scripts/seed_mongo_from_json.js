@@ -40,8 +40,8 @@ function listJsonFilesInDir(dirPath) {
 
 function getMongoEnv() {
   return {
-    uri: process.env.MONGODB_URI || process.env.MONGO_URI || '',
-    dbName: process.env.MONGODB_DB || process.env.MONGO_DB_NAME || '',
+    uri: 'mongodb+srv://sudheervilluri_db_user:5KYG9iIyalSQ1dIw@cluster0.jinz8vz.mongodb.net/?appName=Cluster0&retryWrites=true&w=majority',
+    dbName: 'myDatabase',
     serverSelectionTimeoutMs: Math.max(Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS) || 10000, 1000),
     tlsInsecure: String(process.env.MONGODB_TLS_INSECURE || '').trim().toLowerCase() === 'true',
     secureProtocol: String(process.env.MONGODB_TLS_SECURE_PROTOCOL || '').trim(),

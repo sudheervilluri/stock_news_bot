@@ -27,7 +27,7 @@ function initializeSessionMiddleware() {
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/stock_news_bot',
+      mongoUrl: 'mongodb+srv://sudheervilluri_db_user:5KYG9iIyalSQ1dIw@cluster0.jinz8vz.mongodb.net/?appName=Cluster0&retryWrites=true&w=majority',
       collectionName: 'sessions',
       ttl: 24 * 60 * 60, // 1 day
       autoRemove: 'native',
