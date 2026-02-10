@@ -860,7 +860,16 @@ async function startServer() {
 }
 
 // Export for Serverless (Netlify/Vercel)
+// We need to export a boot function to initialize DB connections
+// because startServer() is not called when imported as a module.
+async function boot() {
+  await bootstrapStorage();
+  await initializeSymbolMaster();
+  await initializeDailySalesSnapshot();
+}
+
 module.exports = app;
+module.exports.boot = boot;
 
 // Only start server if running directly
 if (require.main === module) {
