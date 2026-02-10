@@ -859,7 +859,7 @@ async function startServer() {
   });
 }
 
-// Export for Vercel/Serverless
+// Export for Serverless (Netlify/Vercel)
 module.exports = app;
 
 // Only start server if running directly
