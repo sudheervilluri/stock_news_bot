@@ -1,0 +1,12 @@
+[build]
+  functions = "functions"
+  publish = "public"
+
+[functions]
+  external_node_modules = ["express", "serverless-http", "ejs", "mongodb", "node-cron", "axios", "node-fetch", "bcryptjs", "dotenv", "express-session"]
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/api"
+  status = 200
