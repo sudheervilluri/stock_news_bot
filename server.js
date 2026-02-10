@@ -851,7 +851,13 @@ async function startServer() {
   });
 }
 
-startServer().catch((error) => {
-  console.error('[boot] startup failed:', error);
-  process.exit(1);
-});
+// Export for Vercel/Serverless
+module.exports = app;
+
+// Only start server if running directly
+if (require.main === module) {
+  startServer().catch((error) => {
+    console.error('[boot] startup failed:', error);
+    process.exit(1);
+  });
+}
