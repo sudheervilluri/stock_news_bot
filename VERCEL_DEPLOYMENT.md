@@ -43,7 +43,14 @@ Vercel uses dynamic IP addresses. To allow Vercel to connect to MongoDB Atlas:
 - **Cold Starts**: Vercel functions go to sleep. The first request might take a few seconds to connect to Mongo.
 - **Timeouts**: Vercel has a default execution timeout (usually 10s). Heavy operations might time out.
 
-## 5. Local Fallback
-If Vercel cannot connect to MongoDB, the app will try to use local JSON files. However, Vercel file systems are **read-only** at runtime.
-- **Implication**: You cannot save new data (watchlist, sales snapshots) to disk on Vercel.
-- **Solution**: Ensure MongoDB connectivity is working!
+## 6. Troubleshooting 401 Errors (Blank Page)
+If you see a blank page and `401 Unauthorized` errors for `styles.css` or `app.js` in the Network tab:
+1.  **Vercel Deployment Protection**: This is the most common cause.
+    -   If you are on a Vercel Team or using a specific deployment URL (not a public domain), Vercel might be enforcing "Deployment Protection".
+    -   **Fix**: Go to Settings > Deployment Protection in Vercel and disable "Vercel Authentication" or ensure you are logged into Vercel in the same browser.
+2.  **Static File Paths**:
+    -   We use `process.cwd()` to resolve paths. If files are missing, check the Vercel Build logs to ensure `public/` folder was included.
+3.  **Check Logs**:
+    -   Go to Vercel Dashboard > Functions to see the `[request]` logs we added.
+    -   If you don't see `[request] GET /styles.css`, Vercel blocked it before it reached the app (Deployment Protection).
+    -   If you DO see the log, the app returned 401 (check `authMiddleware`).
