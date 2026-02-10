@@ -63,13 +63,21 @@ const WATCHLIST_TECHNICAL_RETRY_MS = 30 * 60 * 1000;
 
 // Setup EJS as view engine
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+// Use process.cwd() for Vercel/Serverless path resolution
+const rootDir = process.env.VERCEL ? process.cwd() : __dirname;
+app.set('views', path.join(rootDir, 'views'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Debug logging for Vercel troubleshooting
+app.use((req, res, next) => {
+  console.log(`[request] ${req.method} ${req.url}`);
+  next();
+});
 app.use(initializeSessionMiddleware());
 app.use(attachUserToLocals);
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(rootDir, 'public')));
 
 function parseBooleanLike(value, defaultValue = false) {
   if (value === undefined || value === null || value === '') {
